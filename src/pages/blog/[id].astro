@@ -1,0 +1,200 @@
+---
+// Blog Post Page
+// const { id } = Astro.params;
+// Mock post data - will come from PocketBase
+
+const post = {
+  id: 1,
+  title: "Cómo calcular el predial en México: Guía completa 2026",
+  content: `
+    <p class="mb-4">El impuesto predial es uno de los gravámenes más importantes que deben pagar los propietarios de inmuebles en México. En esta guía completa, te explicamos todo lo que necesitas saber sobre su cálculo, pago y posibles deducciones.</p>
+    
+    <h2 class="font-mono font-bold text-2xl mt-8 mb-4">¿Qué es el predial?</h2>
+    <p class="mb-4">El impuesto predial es un tributo local que se paga anualmente por la propiedad de bienes inmuebles. Este impuesto lo recaudan los municipios y estados, y su monto se calcula en función del valor catastral del inmueble.</p>
+    
+    <h2 class="font-mono font-bold text-2xl mt-8 mb-4">¿Cómo se calcula?</h2>
+    <p class="mb-4">El cálculo del predial se basa en la siguiente fórmula básica:</p>
+    
+    <div class="bg-concrete-100 border-4 border-black p-6 my-6 font-mono">
+      <p class="text-lg">Valor Catastral × Tasa del Municipio = Impuesto Predial</p>
+    </div>
+    
+    <h2 class="font-mono font-bold text-2xl mt-8 mb-4">Factores que afectan el valor catastral</h2>
+    <ul class="list-disc list-inside mb-4 space-y-2">
+      <li>Ubicación del inmueble</li>
+      <li>Superficie del terreno</li>
+      <li>Superficie construida</li>
+      <li>Uso del suelo</li>
+      <li>Características de la zona</li>
+    </ul>
+    
+    <h2 class="font-mono font-bold text-2xl mt-8 mb-4">Descuentos y exenciones</h2>
+    <p class="mb-4">Muchos municipios ofrecen descuentos por pronto pago, adultos mayores, personas con discapacidad y otros grupos vulnerables. Es importante revisar las ordenanzas fiscales de tu municipio.</p>
+    
+    <div class="bg-signal-yellow border-4 border-black p-6 my-8">
+      <p class="font-mono font-bold mb-2">TIP IMPORTANTE</p>
+      <p>Paga tu predial durante los primeros meses del año para aprovechar los descuentos por pronto pago. Algunos municipios ofrecen hasta 20% de descuento.</p>
+    </div>
+  `,
+  date: "15 MARZO 2026",
+  category: "GUÍAS",
+  author: "Equipo Propiedades Premier",
+  readTime: "8 min de lectura"
+};
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{post.title} - Propiedades Premier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @import "tailwindcss";
+    @theme {
+      --color-concrete-50: #f7f7f7;
+      --color-concrete-100: #e3e3e3;
+      --color-concrete-200: #c8c8c8;
+      --color-concrete-300: #a4a4a4;
+      --color-concrete-400: #818181;
+      --color-concrete-500: #666666;
+      --color-concrete-600: #515151;
+      --color-concrete-700: #434343;
+      --color-concrete-800: #383838;
+      --color-concrete-900: #2d2d2d;
+      --color-concrete-950: #1a1a1a;
+      --color-asphalt: #2f2f2f;
+      --color-signal-yellow: #f7c600;
+    }
+  </style>
+</head>
+<body class="bg-concrete-100 text-concrete-900 font-sans antialiased">
+
+  <!-- Header -->
+  <header class="bg-black text-white border-b-4 border-signal-yellow">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-signal-yellow flex items-center justify-center">
+          <span class="text-black font-mono font-bold">PP</span>
+        </div>
+        <span class="font-mono font-bold text-lg hidden sm:block">PROPIEDADES PREMIER</span>
+      </a>
+      <nav class="flex items-center gap-1">
+        <a href="/blog" class="px-4 py-2 font-mono text-sm font-medium bg-signal-yellow text-black">BLOG</a>
+        <a href="/signin" class="px-4 py-2 font-mono text-sm font-medium border-2 border-white hover:bg-white hover:text-black transition-colors">ENTRAR</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Article Header -->
+  <section class="bg-concrete-200 border-b-4 border-black">
+    <div class="max-w-4xl mx-auto px-6 py-16">
+      <div class="flex items-center gap-4 mb-6">
+        <span class="px-3 py-1 bg-signal-yellow font-mono text-sm font-bold border-2 border-black">{post.category}</span>
+        <span class="font-mono text-sm text-concrete-600">{post.date}</span>
+      </div>
+      <h1 class="font-mono font-bold text-4xl md:text-5xl leading-tight mb-6">
+        {post.title}
+      </h1>
+      <div class="flex items-center gap-4 text-sm text-concrete-600">
+        <span>Por {post.author}</span>
+        <span>•</span>
+        <span>{post.readTime}</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured Image -->
+  <div class="max-w-4xl mx-auto px-6 -mt-8">
+    <div class="aspect-video bg-concrete-300 border-4 border-black flex items-center justify-center">
+      <span class="text-concrete-500 font-mono">[IMAGEN DESTACADA]</span>
+    </div>
+  </div>
+
+  <!-- Article Content -->
+  <article class="max-w-4xl mx-auto px-6 py-12">
+    <div class="prose prose-lg max-w-none">
+      <Fragment set:html={post.content} />
+    </div>
+
+    <!-- Share -->
+    <div class="mt-12 pt-8 border-t-4 border-black">
+      <h3 class="font-mono font-bold mb-4">COMPARTIR</h3>
+      <div class="flex gap-3">
+        <button class="px-4 py-2 bg-black text-white font-mono text-sm border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">
+          TWITTER
+        </button>
+        <button class="px-4 py-2 bg-black text-white font-mono text-sm border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">
+          FACEBOOK
+        </button>
+        <button class="px-4 py-2 bg-black text-white font-mono text-sm border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">
+          WHATSAPP
+        </button>
+        <button class="px-4 py-2 bg-black text-white font-mono text-sm border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">
+          COPIAR LINK
+        </button>
+      </div>
+    </div>
+  </article>
+
+  <!-- Related Posts -->
+  <section class="bg-concrete-200 border-t-4 border-black py-16">
+    <div class="max-w-7xl mx-auto px-6">
+      <h3 class="font-mono font-bold text-2xl mb-8">ARTÍCULOS RELACIONADOS</h3>
+      <div class="grid md:grid-cols-3 gap-6">
+        <article class="bg-white border-4 border-black">
+          <div class="aspect-video bg-concrete-300 border-b-4 border-black"></div>
+          <div class="p-6">
+            <span class="px-2 py-1 bg-signal-yellow font-mono text-xs font-bold">GUÍAS</span>
+            <h4 class="font-mono font-bold mt-3 mb-2 hover:underline">
+              <a href="#">Cómo pagar el predial en línea en cada estado</a>
+            </h4>
+          </div>
+        </article>
+        <article class="bg-white border-4 border-black">
+          <div class="aspect-video bg-concrete-300 border-b-4 border-black"></div>
+          <div class="p-6">
+            <span class="px-2 py-1 bg-signal-yellow font-mono text-xs font-bold">IMPUESTOS</span>
+            <h4 class="font-mono font-bold mt-3 mb-2 hover:underline">
+              <a href="#">¿Qué es el avalúo catastral?</a>
+            </h4>
+          </div>
+        </article>
+        <article class="bg-white border-4 border-black">
+          <div class="aspect-video bg-concrete-300 border-b-4 border-black"></div>
+          <div class="p-6">
+            <span class="px-2 py-1 bg-signal-yellow font-mono text-xs font-bold">TIPS</span>
+            <h4 class="font-mono font-bold mt-3 mb-2 hover:underline">
+              <a href="#">5 formas de reducir tu predial legalmente</a>
+            </h4>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-concrete-900 text-white py-12 border-t-4 border-signal-yellow">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-signal-yellow flex items-center justify-center">
+            <span class="text-black font-mono font-bold">PP</span>
+          </div>
+          <span class="font-mono font-bold">PROPIEDADES PREMIER</span>
+        </div>
+        <nav class="flex flex-wrap justify-center gap-6 text-sm">
+          <a href="/" class="hover:text-signal-yellow">Inicio</a>
+          <a href="/blog" class="hover:text-signal-yellow">Blog</a>
+          <a href="/signin" class="hover:text-signal-yellow">Entrar</a>
+          <a href="/signup" class="hover:text-signal-yellow">Crear cuenta</a>
+        </nav>
+        <p class="text-concrete-500 text-sm">© 2026 Propiedades Premier</p>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,235 @@
+---
+// Home - Landing page
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Propiedades Premier - Gestión de Inmuebles</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @import "tailwindcss";
+    @theme {
+      --color-concrete-50: #f7f7f7;
+      --color-concrete-100: #e3e3e3;
+      --color-concrete-200: #c8c8c8;
+      --color-concrete-300: #a4a4a4;
+      --color-concrete-400: #818181;
+      --color-concrete-500: #666666;
+      --color-concrete-600: #515151;
+      --color-concrete-700: #434343;
+      --color-concrete-800: #383838;
+      --color-concrete-900: #2d2d2d;
+      --color-concrete-950: #1a1a1a;
+      --color-asphalt: #2f2f2f;
+      --color-signal-yellow: #f7c600;
+    }
+  </style>
+</head>
+<body class="bg-concrete-100 text-concrete-900 font-sans antialiased">
+  <!-- Header brutal -->
+  <header class="bg-signal-yellow border-b-4 border-black">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 bg-black flex items-center justify-center">
+          <span class="text-signal-yellow font-mono font-bold text-xl">PP</span>
+        </div>
+        <div>
+          <h1 class="font-mono font-bold text-2xl tracking-tight">PROPIEDADES PREMIER</h1>
+          <p class="font-mono text-sm text-black/70">GESTIÓN INMOBILIARIA MÉXICO</p>
+        </div>
+      </div>
+      <nav class="hidden md:flex items-center gap-1">
+        <a href="/blog" class="px-4 py-2 font-mono text-sm font-medium hover:bg-black hover:text-signal-yellow transition-colors">BLOG</a>
+        <a href="/signin" class="px-4 py-2 font-mono text-sm font-medium bg-black text-signal-yellow">ENTRAR</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="bg-concrete-200 border-b-4 border-black">
+    <div class="max-w-7xl mx-auto px-6 py-20 md:py-32">
+      <div class="grid md:grid-cols-2 gap-12 items-center">
+        <div>
+          <div class="inline-block bg-black text-white px-3 py-1 font-mono text-sm mb-6">
+            VERSIÓN 1.0 — MÉXICO
+          </div>
+          <h2 class="font-mono font-bold text-5xl md:text-7xl leading-none mb-6">
+            TUS PROPIEDADES<br/>
+            <span class="bg-signal-yellow px-2">BAJO CONTROL</span>
+          </h2>
+          <p class="text-xl text-concrete-700 mb-8 max-w-lg leading-relaxed">
+            Gestiona pagos de predial, luz, agua y servicios. 
+            Recibe recordatorios automáticos y genera líneas de captura en segundos.
+          </p>
+          <div class="flex flex-wrap gap-4">
+            <a href="/signup" class="inline-block bg-black text-white px-8 py-4 font-mono font-bold text-lg hover:bg-concrete-800 transition-colors border-2 border-black">
+              CREAR CUENTA →
+            </a>
+            <a href="#como-funciona" class="inline-block bg-transparent text-black px-8 py-4 font-mono font-bold text-lg border-2 border-black hover:bg-black hover:text-white transition-colors">
+              SABER MÁS
+            </a>
+          </div>
+        </div>
+        <div class="relative">
+          <div class="bg-white border-4 border-black p-8 transform rotate-1">
+            <div class="space-y-4">
+              <div class="flex items-center gap-4 p-4 bg-concrete-100 border-2 border-black">
+                <div class="w-4 h-4 bg-signal-yellow border-2 border-black"></div>
+                <span class="font-mono">Predial Casa Zapopan — $2,450 MXN</span>
+              </div>
+              <div class="flex items-center gap-4 p-4 bg-concrete-100 border-2 border-black">
+                <div class="w-4 h-4 bg-green-500 border-2 border-black"></div>
+                <span class="font-mono">Luz Depto CDMX — PAGADO ✓</span>
+              </div>
+              <div class="flex items-center gap-4 p-4 bg-concrete-100 border-2 border-black">
+                <div class="w-4 h-4 bg-red-500 border-2 border-black"></div>
+                <span class="font-mono">Agua Terreno GDL — VENCIDO ⚠</span>
+              </div>
+            </div>
+          </div>
+          <div class="absolute -bottom-4 -right-4 bg-signal-yellow border-4 border-black px-4 py-2 font-mono font-bold transform -rotate-2">
+            PANEL DE CONTROL
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Grid -->
+  <section id="como-funciona" class="py-20 bg-white">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <h3 class="font-mono font-bold text-4xl mb-4">FUNCIONALIDADES</h3>
+        <p class="text-concrete-600 text-lg">Todo lo que necesitas para gestionar tus inmuebles</p>
+      </div>
+      
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="bg-concrete-100 border-4 border-black p-8">
+          <div class="w-16 h-16 bg-black flex items-center justify-center mb-6">
+            <svg class="w-8 h-8 text-signal-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+          </div>
+          <h4 class="font-mono font-bold text-xl mb-3">TRACKING DE PAGOS</h4>
+          <p class="text-concrete-600">Registra y visualiza todos tus pagos pendientes. Predial, luz, agua, mantenimiento y servicios personalizados.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="bg-concrete-100 border-4 border-black p-8">
+          <div class="w-16 h-16 bg-black flex items-center justify-center mb-6">
+            <svg class="w-8 h-8 text-signal-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </div>
+          <h4 class="font-mono font-bold text-xl mb-3">ALERTAS POR EMAIL</h4>
+          <p class="text-concrete-600">Recibe recordatorios automáticos antes de las fechas límite. Nunca más pagues recargos por olvidos.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="bg-concrete-100 border-4 border-black p-8">
+          <div class="w-16 h-16 bg-black flex items-center justify-center mb-6">
+            <svg class="w-8 h-8 text-signal-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+            </svg>
+          </div>
+          <h4 class="font-mono font-bold text-xl mb-3">LÍNEAS DE CAPTURA</h4>
+          <p class="text-concrete-600">Genera líneas de captura para pagos directamente desde la plataforma. Rápido y sin complicaciones.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="bg-black text-white py-20">
+    <div class="max-w-4xl mx-auto px-6 text-center">
+      <h3 class="font-mono font-bold text-4xl md:text-5xl mb-6">
+        COMIENZA HOY<br/>
+        <span class="text-signal-yellow">GRATIS</span>
+      </h3>
+      <p class="text-xl text-concrete-300 mb-8">
+        Registra tu primera propiedad en menos de 5 minutos.
+        Sin tarjetas de crédito, sin compromisos.
+      </p>
+      <a href="/signup" class="inline-block bg-signal-yellow text-black px-10 py-5 font-mono font-bold text-xl hover:bg-white transition-colors border-4 border-signal-yellow">
+        CREAR CUENTA GRATIS →
+      </a>
+    </div>
+  </section>
+
+  <!-- Blog Preview -->
+  <section class="py-20 bg-concrete-200">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="flex items-center justify-between mb-12">
+        <h3 class="font-mono font-bold text-3xl">DEL BLOG</h3>
+        <a href="/blog" class="font-mono text-sm font-medium underline hover:no-underline">VER TODOS →</a>
+      </div>
+      
+      <div class="grid md:grid-cols-2 gap-6">
+        <article class="bg-white border-4 border-black p-6 hover:bg-signal-yellow transition-colors group">
+          <div class="font-mono text-sm text-concrete-500 mb-3">15 MAR 2026</div>
+          <h4 class="font-mono font-bold text-xl mb-3 group-hover:underline">Cómo calcular el predial en México: Guía completa 2026</h4>
+          <p class="text-concrete-600">Entiende cómo se calcula el impuesto predial, qué factores influyen en el valor catastral y cómo pagar menos de forma legal...</p>
+        </article>
+        
+        <article class="bg-white border-4 border-black p-6 hover:bg-signal-yellow transition-colors group">
+          <div class="font-mono text-sm text-concrete-500 mb-3">10 MAR 2026</div>
+          <h4 class="font-mono font-bold text-xl mb-3 group-hover:underline">Documentos necesarios para escriturar una propiedad</h4>
+          <p class="text-concrete-600">Checklist completo de documentación requerida para escrituración: desde la escritura pública hasta el alta en el RPP...</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-concrete-900 text-white py-12 border-t-4 border-signal-yellow">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="grid md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-signal-yellow flex items-center justify-center">
+              <span class="text-black font-mono font-bold">PP</span>
+            </div>
+            <span class="font-mono font-bold">PROPIEDADES PREMIER</span>
+          </div>
+          <p class="text-concrete-400 text-sm">Gestión inmobiliaria simplificada para México.</p>
+        </div>
+        
+        <div>
+          <h5 class="font-mono font-bold mb-4 text-signal-yellow">PLATAFORMA</h5>
+          <ul class="space-y-2 text-sm text-concrete-300">
+            <li><a href="/signup" class="hover:text-white">Crear cuenta</a></li>
+            <li><a href="/signin" class="hover:text-white">Iniciar sesión</a></li>
+            <li><a href="/dashboard" class="hover:text-white">Dashboard</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h5 class="font-mono font-bold mb-4 text-signal-yellow">RECURSOS</h5>
+          <ul class="space-y-2 text-sm text-concrete-300">
+            <li><a href="/blog" class="hover:text-white">Blog</a></li>
+            <li><a href="#" class="hover:text-white">Guías</a></li>
+            <li><a href="#" class="hover:text-white">FAQ</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h5 class="font-mono font-bold mb-4 text-signal-yellow">CONTACTO</h5>
+          <ul class="space-y-2 text-sm text-concrete-300">
+            <li>hola@propiedadespremier.com</li>
+            <li>Ciudad de México, México</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-concrete-700 mt-12 pt-8 text-center text-sm text-concrete-500">
+        <p>© 2026 Propiedades Premier. Todos los derechos reservados.</p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
