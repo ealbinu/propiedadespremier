@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --color-concrete-50: #f7f7f7;
+  --color-concrete-100: #e3e3e3;
+  --color-concrete-200: #c8c8c8;
+  --color-concrete-300: #a4a4a4;
+  --color-concrete-400: #818181;
+  --color-concrete-500: #666666;
+  --color-concrete-600: #515151;
+  --color-concrete-700: #434343;
+  --color-concrete-800: #383838;
+  --color-concrete-900: #2d2d2d;
+  --color-concrete-950: #1a1a1a;
+  --color-asphalt: #2f2f2f;
+  --color-signal-yellow: #f7c600;
+}
+
+@layer base {
+  html, body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+  }
+}

@@ -1,113 +1,86 @@
 ---
+import Layout from '../layouts/Layout.astro';
 // Sign In Page
 ---
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iniciar Sesión - Propiedades Premier</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    @import "tailwindcss";
-    @theme {
-      --color-concrete-50: #f7f7f7;
-      --color-concrete-100: #e3e3e3;
-      --color-concrete-200: #c8c8c8;
-      --color-concrete-300: #a4a4a4;
-      --color-concrete-400: #818181;
-      --color-concrete-500: #666666;
-      --color-concrete-600: #515151;
-      --color-concrete-700: #434343;
-      --color-concrete-800: #383838;
-      --color-concrete-900: #2d2d2d;
-      --color-concrete-950: #1a1a1a;
-      --color-asphalt: #2f2f2f;
-      --color-signal-yellow: #f7c600;
-    }
-  </style>
-</head>
-<body class="bg-concrete-200 min-h-screen flex items-center justify-center p-4">
-  
-  <div class="w-full max-w-md">
-    <!-- Logo -->
-    <div class="text-center mb-8">
-      <a href="/" class="inline-flex items-center gap-3">
-        <div class="w-12 h-12 bg-black flex items-center justify-center">
-          <span class="text-signal-yellow font-mono font-bold text-xl">PP</span>
-        </div>
-        <div class="text-left">
-          <h1 class="font-mono font-bold text-xl tracking-tight">PROPIEDADES PREMIER</h1>
-          <p class="font-mono text-sm text-concrete-600">GESTIÓN INMOBILIARIA</p>
-        </div>
-      </a>
-    </div>
-
-    <!-- Form Card -->
-    <div class="bg-white border-4 border-black p-8">
-      <div class="mb-6">
-        <h2 class="font-mono font-bold text-2xl mb-2">INICIAR SESIÓN</h2>
-        <p class="text-concrete-600 text-sm">Accede a tu panel de control</p>
+<Layout title="Iniciar Sesión - Propiedades Premier">
+  <div class="min-h-screen flex items-center justify-center p-4 bg-concrete-200">
+    <div class="w-full max-w-md">
+      <!-- Logo -->
+      <div class="text-center mb-8">
+        <a href="/" class="inline-flex items-center gap-3">
+          <div class="w-12 h-12 bg-black flex items-center justify-center">
+            <span class="text-signal-yellow font-mono font-bold text-xl">PP</span>
+          </div>
+          <div class="text-left">
+            <h1 class="font-mono font-bold text-xl tracking-tight">PROPIEDADES PREMIER</h1>
+            <p class="font-mono text-sm text-concrete-600">GESTIÓN INMOBILIARIA</p>
+          </div>
+        </a>
       </div>
 
-      <form class="space-y-4" action="/api/auth/signin" method="POST">
-        <div>
-          <label class="block font-mono text-sm font-medium mb-2">CORREO ELECTRÓNICO</label>
-          <input 
-            type="email" 
-            name="email" 
-            required
-            class="w-full px-4 py-3 bg-concrete-100 border-2 border-black font-mono text-sm focus:outline-none focus:bg-signal-yellow transition-colors"
-            placeholder="juan@ejemplo.com"
+      <!-- Form Card -->
+      <div class="bg-white border-4 border-black p-8">
+        <div class="mb-6">
+          <h2 class="font-mono font-bold text-2xl mb-2">INICIAR SESIÓN</h2>
+          <p class="text-concrete-600 text-sm">Accede a tu panel de control</p>
+        </div>
+
+        <form class="space-y-4" action="/api/auth/signin" method="POST">
+          <div>
+            <label class="block font-mono text-sm font-medium mb-2">CORREO ELECTRÓNICO</label>
+            <input 
+              type="email" 
+              name="email" 
+              required
+              class="w-full px-4 py-3 bg-concrete-100 border-2 border-black font-mono text-sm focus:outline-none focus:bg-signal-yellow transition-colors"
+              placeholder="juan@ejemplo.com"
+            >
+          </div>
+
+          <div>
+            <label class="block font-mono text-sm font-medium mb-2">CONTRASEÑA</label>
+            <input 
+              type="password" 
+              name="password" 
+              required
+              class="w-full px-4 py-3 bg-concrete-100 border-2 border-black font-mono text-sm focus:outline-none focus:bg-signal-yellow transition-colors"
+              placeholder="••••••••"
+            >
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label class="flex items-center gap-2">
+              <input type="checkbox" name="remember" class="w-4 h-4 border-2 border-black">
+              <span class="text-sm text-concrete-600">Recordarme</span>
+            </label>
+            <a href="/forgot-password" class="text-sm font-mono underline hover:no-underline">
+              ¿OLVIDASTE TU CONTRASEÑA?
+            </a>
+          </div>
+
+          <button 
+            type="submit"
+            class="w-full bg-black text-white font-mono font-bold py-4 border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors"
           >
+            ENTRAR →
+          </button>
+        </form>
+
+        <div class="mt-6 pt-6 border-t-2 border-concrete-200 text-center">
+          <p class="text-concrete-600 text-sm">
+            ¿No tienes cuenta? 
+            <a href="/signup" class="font-mono font-bold underline hover:no-underline">REGÍSTRATE</a>
+          </p>
         </div>
-
-        <div>
-          <label class="block font-mono text-sm font-medium mb-2">CONTRASEÑA</label>
-          <input 
-            type="password" 
-            name="password" 
-            required
-            class="w-full px-4 py-3 bg-concrete-100 border-2 border-black font-mono text-sm focus:outline-none focus:bg-signal-yellow transition-colors"
-            placeholder="••••••••"
-          >
-        </div>
-
-        <div class="flex items-center justify-between">
-          <label class="flex items-center gap-2">
-            <input type="checkbox" name="remember" class="w-4 h-4 border-2 border-black">
-            <span class="text-sm text-concrete-600">Recordarme</span>
-          </label>
-          <a href="/forgot-password" class="text-sm font-mono underline hover:no-underline">
-            ¿OLVIDASTE TU CONTRASEÑA?
-          </a>
-        </div>
-
-        <button 
-          type="submit"
-          class="w-full bg-black text-white font-mono font-bold py-4 border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors"
-        >
-          ENTRAR →
-        </button>
-      </form>
-
-      <div class="mt-6 pt-6 border-t-2 border-concrete-200 text-center">
-        <p class="text-concrete-600 text-sm">
-          ¿No tienes cuenta? 
-          <a href="/signup" class="font-mono font-bold underline hover:no-underline">REGÍSTRATE</a>
-        </p>
       </div>
-    </div>
 
-    <!-- Back Link -->
-    <div class="text-center mt-6">
-      <a href="/" class="font-mono text-sm text-concrete-600 hover:text-black underline">
-        ← VOLVER AL INICIO
-      </a>
+      <!-- Back Link -->
+      <div class="text-center mt-6">
+        <a href="/" class="font-mono text-sm text-concrete-600 hover:text-black underline">
+          ← VOLVER AL INICIO
+        </a>
+      </div>
     </div>
   </div>
-
-</body>
-</html>
+</Layout>

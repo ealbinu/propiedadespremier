@@ -1,35 +1,9 @@
 ---
+import Layout from '../layouts/Layout.astro';
 // Home - Landing page
 ---
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Propiedades Premier - Gestión de Inmuebles</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    @import "tailwindcss";
-    @theme {
-      --color-concrete-50: #f7f7f7;
-      --color-concrete-100: #e3e3e3;
-      --color-concrete-200: #c8c8c8;
-      --color-concrete-300: #a4a4a4;
-      --color-concrete-400: #818181;
-      --color-concrete-500: #666666;
-      --color-concrete-600: #515151;
-      --color-concrete-700: #434343;
-      --color-concrete-800: #383838;
-      --color-concrete-900: #2d2d2d;
-      --color-concrete-950: #1a1a1a;
-      --color-asphalt: #2f2f2f;
-      --color-signal-yellow: #f7c600;
-    }
-  </style>
-</head>
-<body class="bg-concrete-100 text-concrete-900 font-sans antialiased">
+<Layout title="Propiedades Premier - Gestión de Inmuebles">
   <!-- Header brutal -->
   <header class="bg-signal-yellow border-b-4 border-black">
     <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -231,5 +205,4 @@
       </div>
     </div>
   </footer>
-</body>
-</html>
+</Layout>
