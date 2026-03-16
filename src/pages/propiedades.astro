@@ -1,11 +1,231 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const user = Astro.locals.user!;
+const pb = Astro.locals.pb;
+
+let propiedades: any[] = [];
+let error = '';
+let success = '';
+
+// Handle form submission (add property)
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+
+    if (action === 'crear') {
+      await pb.collection('propiedades').create({
+        nombre: formData.get('nombre'),
+        direccion: formData.get('direccion'),
+        ciudad: formData.get('ciudad'),
+        estado: formData.get('estado'),
+        tipo: formData.get('tipo'),
+        descripcion: formData.get('descripcion'),
+        propietario: user.id,
+        estatus: 'activa',
+      });
+      success = 'Propiedad registrada exitosamente';
+    } else if (action === 'eliminar') {
+      const id = formData.get('id')?.toString();
+      if (id) {
+        await pb.collection('propiedades').delete(id);
+        success = 'Propiedad eliminada';
+      }
+    }
+  } catch (e: any) {
+    error = e?.message || 'Error al procesar la solicitud';
+  }
+}
+
+try {
+  const result = await pb.collection('propiedades').getFullList({
+    filter: `propietario = "${user.id}"`,
+    sort: '-created',
+  });
+  propiedades = result;
+} catch (e) {}
+
+const showForm = Astro.url.searchParams.get('action') === 'nueva';
+
+const initials = user.name
+  ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+  : user.email[0].toUpperCase();
 ---
 
 <Layout title="Mis Propiedades - Propiedades Premier">
-  <div class="p-8">
-    <h1 class="font-mono font-bold text-3xl mb-4">MIS PROPIEDADES</h1>
-    <p class="mb-8">Aquí aparecerá el listado de tus inmuebles.</p>
-    <a href="/dashboard" class="underline font-mono">← Volver al Dashboard</a>
+  <div class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-black text-white border-b-4 border-signal-yellow">
+      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <a href="/" class="w-10 h-10 bg-signal-yellow flex items-center justify-center">
+            <span class="text-black font-mono font-bold">PP</span>
+          </a>
+          <span class="font-mono font-bold text-lg hidden sm:block">PROPIEDADES PREMIER</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="font-mono text-sm hidden sm:block">{user.email}</span>
+          <div class="w-10 h-10 bg-concrete-700 border-2 border-white flex items-center justify-center">
+            <span class="font-mono font-bold">{initials}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="flex flex-1">
+      <!-- Sidebar -->
+      <aside class="w-64 bg-concrete-900 text-white border-r-4 border-black hidden lg:block">
+        <nav class="p-4">
+          <div class="mb-6"><span class="font-mono text-xs text-concrete-400">MENÚ PRINCIPAL</span></div>
+          <ul class="space-y-1">
+            <li><a href="/dashboard" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+              DASHBOARD
+            </a></li>
+            <li><a href="/propiedades" class="flex items-center gap-3 px-4 py-3 bg-signal-yellow text-black font-mono font-medium">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+              MIS PROPIEDADES
+            </a></li>
+            <li><a href="/pagos" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              PAGOS
+            </a></li>
+          </ul>
+          <div class="mt-8 mb-6"><span class="font-mono text-xs text-concrete-400">CUENTA</span></div>
+          <ul><li><a href="/api/auth/signout" class="flex items-center gap-3 px-4 py-3 hover:bg-red-900 font-mono text-sm transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            CERRAR SESIÓN
+          </a></li></ul>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 p-6 pb-24 lg:pb-6">
+        <div class="max-w-5xl">
+          <div class="flex items-center justify-between mb-8">
+            <div>
+              <h1 class="font-mono font-bold text-3xl mb-2">MIS PROPIEDADES</h1>
+              <p class="text-concrete-600">{propiedades.length} propiedad{propiedades.length !== 1 ? 'es' : ''} registrada{propiedades.length !== 1 ? 's' : ''}</p>
+            </div>
+            <a href="/propiedades?action=nueva" class="bg-black text-white px-6 py-3 font-mono font-bold border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">
+              + NUEVA
+            </a>
+          </div>
+
+          {error && (
+            <div class="bg-red-100 border-4 border-red-500 p-4 mb-6">
+              <p class="font-mono text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div class="bg-green-100 border-4 border-green-500 p-4 mb-6">
+              <p class="font-mono text-sm text-green-700">{success}</p>
+            </div>
+          )}
+
+          <!-- New Property Form -->
+          {showForm && (
+            <div class="bg-signal-yellow border-4 border-black p-8 mb-8">
+              <h2 class="font-mono font-bold text-xl mb-6">REGISTRAR NUEVA PROPIEDAD</h2>
+              <form method="POST" class="grid md:grid-cols-2 gap-4">
+                <input type="hidden" name="action" value="crear" />
+                <div class="md:col-span-2">
+                  <label class="block font-mono text-sm font-medium mb-2">NOMBRE / ALIAS</label>
+                  <input type="text" name="nombre" required placeholder="Ej: Casa de playa Cancún" class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none" />
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block font-mono text-sm font-medium mb-2">DIRECCIÓN</label>
+                  <input type="text" name="direccion" required placeholder="Calle, número, colonia" class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block font-mono text-sm font-medium mb-2">CIUDAD</label>
+                  <input type="text" name="ciudad" placeholder="Ej: Cancún" class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block font-mono text-sm font-medium mb-2">ESTADO</label>
+                  <input type="text" name="estado" placeholder="Ej: Quintana Roo" class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block font-mono text-sm font-medium mb-2">TIPO</label>
+                  <select name="tipo" class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none">
+                    <option value="casa">Casa</option>
+                    <option value="departamento">Departamento</option>
+                    <option value="terreno">Terreno</option>
+                    <option value="local">Local comercial</option>
+                    <option value="oficina">Oficina</option>
+                    <option value="bodega">Bodega</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block font-mono text-sm font-medium mb-2">DESCRIPCIÓN (OPCIONAL)</label>
+                  <input type="text" name="descripcion" placeholder="Notas adicionales" class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none" />
+                </div>
+                <div class="md:col-span-2 flex gap-4">
+                  <button type="submit" class="bg-black text-white px-8 py-3 font-mono font-bold border-2 border-black hover:bg-white hover:text-black transition-colors">
+                    GUARDAR →
+                  </button>
+                  <a href="/propiedades" class="px-8 py-3 font-mono font-bold border-2 border-black hover:bg-black hover:text-white transition-colors">
+                    CANCELAR
+                  </a>
+                </div>
+              </form>
+            </div>
+          )}
+
+          <!-- Properties Grid -->
+          {propiedades.length > 0 ? (
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {propiedades.map((prop: any) => (
+                <div class="bg-white border-4 border-black">
+                  <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                      <span class="px-2 py-1 bg-concrete-200 font-mono text-xs font-bold uppercase">{prop.tipo || 'propiedad'}</span>
+                      <span class={`w-3 h-3 rounded-full ${prop.estatus === 'activa' ? 'bg-green-500' : 'bg-concrete-400'}`}></span>
+                    </div>
+                    <h3 class="font-mono font-bold text-xl mb-2">{prop.nombre}</h3>
+                    <p class="text-concrete-600 text-sm mb-1">{prop.direccion}</p>
+                    {(prop.ciudad || prop.estado) && (
+                      <p class="text-concrete-500 text-sm">{[prop.ciudad, prop.estado].filter(Boolean).join(', ')}</p>
+                    )}
+                    {prop.descripcion && (
+                      <p class="text-concrete-500 text-sm mt-2 italic">{prop.descripcion}</p>
+                    )}
+                  </div>
+                  <div class="border-t-2 border-concrete-200 p-4 flex justify-between">
+                    <a href={`/pagos?propiedad=${prop.id}`} class="font-mono text-sm font-bold underline hover:no-underline">VER PAGOS</a>
+                    <form method="POST" onsubmit="return confirm('¿Eliminar esta propiedad?')">
+                      <input type="hidden" name="action" value="eliminar" />
+                      <input type="hidden" name="id" value={prop.id} />
+                      <button type="submit" class="font-mono text-sm text-red-600 hover:underline">ELIMINAR</button>
+                    </form>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div class="text-center py-20">
+              <div class="inline-block bg-concrete-200 border-4 border-black p-12">
+                <h2 class="font-mono font-bold text-2xl mb-4">SIN PROPIEDADES</h2>
+                <p class="text-concrete-600 mb-6">Registra tu primera propiedad para comenzar a gestionar pagos.</p>
+                <a href="/propiedades?action=nueva" class="inline-block bg-black text-white px-8 py-4 font-mono font-bold border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">
+                  + AGREGAR PROPIEDAD
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+
+    <!-- Mobile Nav -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-black text-white border-t-4 border-signal-yellow flex justify-around py-3">
+      <a href="/dashboard" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/></svg><span class="font-mono text-xs mt-1">INICIO</span></a>
+      <a href="/propiedades" class="flex flex-col items-center text-signal-yellow"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="font-mono text-xs mt-1">PROPS</span></a>
+      <a href="/pagos" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span class="font-mono text-xs mt-1">PAGOS</span></a>
+      <a href="/api/auth/signout" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg><span class="font-mono text-xs mt-1">SALIR</span></a>
+    </nav>
   </div>
 </Layout>

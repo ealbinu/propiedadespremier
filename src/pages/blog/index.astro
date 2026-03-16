@@ -1,81 +1,48 @@
 ---
-// Blog Listing Page
-// Mock data - will come from PocketBase
-const posts = [
-  {
-    id: 1,
-    title: "Cómo calcular el predial en México: Guía completa 2026",
-    excerpt: "Entiende cómo se calcula el impuesto predial, qué factores influyen en el valor catastral y cómo pagar menos de forma legal.",
-    date: "15 MAR 2026",
-    category: "GUÍAS",
-    readTime: "8 min"
-  },
-  {
-    id: 2,
-    title: "Documentos necesarios para escriturar una propiedad",
-    excerpt: "Checklist completo de documentación requerida para escrituración: desde la escritura pública hasta el alta en el RPP.",
-    date: "10 MAR 2026",
-    category: "TRÁMITES",
-    readTime: "12 min"
-  },
-  {
-    id: 3,
-    title: "Diferencias entre escritura pública y título de propiedad",
-    excerpt: "Conoce la diferencia entre estos dos documentos clave y cuándo necesitas cada uno para acreditar la propiedad de un inmueble.",
-    date: "05 MAR 2026",
-    category: "LEGAL",
-    readTime: "6 min"
-  },
-  {
-    id: 4,
-    title: "Cómo pagar el predial en línea en cada estado de México",
-    excerpt: "Guía paso a paso para realizar el pago del predial vía internet en los principales estados del país.",
-    date: "28 FEB 2026",
-    category: "GUÍAS",
-    readTime: "10 min"
-  },
-  {
-    id: 5,
-    title: "¿Qué es el avalúo catastral y para qué sirve?",
-    excerpt: "Todo sobre el avalúo catastral: cómo se determina, cuándo solicitarlo y cómo puede afectar tus impuestos.",
-    date: "20 FEB 2026",
-    category: "IMPUESOS",
-    readTime: "7 min"
-  }
-];
+import Layout from '../../layouts/Layout.astro';
+import { createPocketBase } from '../../lib/pocketbase';
 
-const categories = ["TODOS", "GUÍAS", "TRÁMITES", "LEGAL", "IMPUESOS", "TIPS"];
+const pb = createPocketBase();
+
+let posts: any[] = [];
+let categories: any[] = [];
+try {
+  const result = await pb.collection('blog_posts').getList(1, 12, {
+    filter: 'publicado = true',
+    sort: '-fecha_publicacion',
+    expand: 'categoria',
+  });
+  posts = result.items;
+
+  const catResult = await pb.collection('categorias_blog').getFullList({ sort: 'nombre' });
+  categories = catResult;
+} catch (e) {
+  // Collections may be empty
+}
+
+const selectedCategory = Astro.url.searchParams.get('categoria') || '';
+
+const filteredPosts = selectedCategory
+  ? posts.filter(p => p.expand?.categoria?.slug === selectedCategory)
+  : posts;
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+}
+
+function getImageUrl(post: any) {
+  if (post.imagen) {
+    return pb.files.getURL(post, post.imagen);
+  }
+  return '';
+}
+
+const user = Astro.locals.user;
 ---
 
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Blog - Propiedades Premier</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    @import "tailwindcss";
-    @theme {
-      --color-concrete-50: #f7f7f7;
-      --color-concrete-100: #e3e3e3;
-      --color-concrete-200: #c8c8c8;
-      --color-concrete-300: #a4a4a4;
-      --color-concrete-400: #818181;
-      --color-concrete-500: #666666;
-      --color-concrete-600: #515151;
-      --color-concrete-700: #434343;
-      --color-concrete-800: #383838;
-      --color-concrete-900: #2d2d2d;
-      --color-concrete-950: #1a1a1a;
-      --color-asphalt: #2f2f2f;
-      --color-signal-yellow: #f7c600;
-    }
-  </style>
-</head>
-<body class="bg-concrete-100 text-concrete-900 font-sans antialiased">
-
+<Layout title="Blog - Propiedades Premier">
   <!-- Header -->
   <header class="bg-black text-white border-b-4 border-signal-yellow">
     <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -87,7 +54,11 @@ const categories = ["TODOS", "GUÍAS", "TRÁMITES", "LEGAL", "IMPUESOS", "TIPS"]
       </a>
       <nav class="flex items-center gap-1">
         <a href="/blog" class="px-4 py-2 font-mono text-sm font-medium bg-signal-yellow text-black">BLOG</a>
-        <a href="/signin" class="px-4 py-2 font-mono text-sm font-medium border-2 border-white hover:bg-white hover:text-black transition-colors">ENTRAR</a>
+        {user ? (
+          <a href="/dashboard" class="px-4 py-2 font-mono text-sm font-medium border-2 border-white hover:bg-white hover:text-black transition-colors">DASHBOARD</a>
+        ) : (
+          <a href="/signin" class="px-4 py-2 font-mono text-sm font-medium border-2 border-white hover:bg-white hover:text-black transition-colors">ENTRAR</a>
+        )}
       </nav>
     </div>
   </header>
@@ -110,57 +81,68 @@ const categories = ["TODOS", "GUÍAS", "TRÁMITES", "LEGAL", "IMPUESOS", "TIPS"]
   </section>
 
   <!-- Categories -->
-  <section class="bg-white border-b-4 border-black">
-    <div class="max-w-7xl mx-auto px-6 py-4">
-      <div class="flex flex-wrap gap-2">
-        {categories.map((cat, index) => (
-          <button class={`px-4 py-2 font-mono text-sm font-medium border-2 border-black transition-colors ${index === 0 ? 'bg-black text-white' : 'hover:bg-signal-yellow'}`}>
-            {cat}
-          </button>
-        ))}
+  {categories.length > 0 && (
+    <section class="bg-white border-b-4 border-black">
+      <div class="max-w-7xl mx-auto px-6 py-4">
+        <div class="flex flex-wrap gap-2">
+          <a href="/blog" class={`px-4 py-2 font-mono text-sm font-medium border-2 border-black transition-colors ${!selectedCategory ? 'bg-black text-white' : 'hover:bg-signal-yellow'}`}>
+            TODOS
+          </a>
+          {categories.map((cat: any) => (
+            <a href={`/blog?categoria=${cat.slug}`} class={`px-4 py-2 font-mono text-sm font-medium border-2 border-black transition-colors ${selectedCategory === cat.slug ? 'bg-black text-white' : 'hover:bg-signal-yellow'}`}>
+              {cat.nombre.toUpperCase()}
+            </a>
+          ))}
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
+  )}
 
   <!-- Blog Grid -->
   <section class="py-16">
     <div class="max-w-7xl mx-auto px-6">
-      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {posts.map(post => (
-          <article class="bg-white border-4 border-black hover:translate-y-[-4px] transition-transform">
-            <div class="aspect-video bg-concrete-300 border-b-4 border-black flex items-center justify-center">
-              <div class="text-concrete-500 font-mono text-sm">[IMAGEN]</div>
-            </div>
-            <div class="p-6">
-              <div class="flex items-center gap-3 mb-4">
-                <span class="px-2 py-1 bg-signal-yellow font-mono text-xs font-bold">{post.category}</span>
-                <span class="text-concrete-500 font-mono text-xs">{post.date}</span>
+      {filteredPosts.length > 0 ? (
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredPosts.map((post: any) => (
+            <article class="bg-white border-4 border-black hover:translate-y-[-4px] transition-transform">
+              <div class="aspect-video bg-concrete-300 border-b-4 border-black flex items-center justify-center overflow-hidden">
+                {getImageUrl(post) ? (
+                  <img src={getImageUrl(post)} alt={post.titulo} class="w-full h-full object-cover" />
+                ) : (
+                  <div class="text-concrete-500 font-mono text-sm">[IMAGEN]</div>
+                )}
               </div>
-              <h2 class="font-mono font-bold text-xl mb-3 leading-tight hover:underline">
-                <a href={`/blog/${post.id}`}>{post.title}</a>
-              </h2>
-              <p class="text-concrete-600 mb-4 text-sm">{post.excerpt}</p>
-              <div class="flex items-center justify-between pt-4 border-t-2 border-concrete-200">
-                <span class="text-concrete-500 font-mono text-xs">{post.readTime} de lectura</span>
-                <a href={`/blog/${post.id}`} class="font-mono text-sm font-bold underline hover:no-underline">
-                  LEER →
-                </a>
+              <div class="p-6">
+                <div class="flex items-center gap-3 mb-4">
+                  {post.expand?.categoria && (
+                    <span class="px-2 py-1 bg-signal-yellow font-mono text-xs font-bold">{post.expand.categoria.nombre.toUpperCase()}</span>
+                  )}
+                  <span class="text-concrete-500 font-mono text-xs">{formatDate(post.fecha_publicacion)}</span>
+                </div>
+                <h2 class="font-mono font-bold text-xl mb-3 leading-tight hover:underline">
+                  <a href={`/blog/${post.slug}`}>{post.titulo}</a>
+                </h2>
+                <p class="text-concrete-600 mb-4 text-sm">{post.extracto}</p>
+                <div class="flex items-center justify-between pt-4 border-t-2 border-concrete-200">
+                  {post.tiempo_lectura && (
+                    <span class="text-concrete-500 font-mono text-xs">{post.tiempo_lectura} min de lectura</span>
+                  )}
+                  <a href={`/blog/${post.slug}`} class="font-mono text-sm font-bold underline hover:no-underline">
+                    LEER →
+                  </a>
+                </div>
               </div>
-            </div>
-          </article>
-        ))}
-      </div>
-
-      <!-- Pagination -->
-      <div class="flex justify-center mt-12">
-        <div class="flex items-center gap-2">
-          <button class="w-12 h-12 bg-black text-white font-mono font-bold border-2 border-black">1</button>
-          <button class="w-12 h-12 bg-white font-mono font-bold border-2 border-black hover:bg-signal-yellow transition-colors">2</button>
-          <button class="w-12 h-12 bg-white font-mono font-bold border-2 border-black hover:bg-signal-yellow transition-colors">3</button>
-          <span class="px-2">...</span>
-          <button class="w-12 h-12 bg-white font-mono font-bold border-2 border-black hover:bg-signal-yellow transition-colors">→</button>
+            </article>
+          ))}
         </div>
-      </div>
+      ) : (
+        <div class="text-center py-20">
+          <div class="inline-block bg-concrete-200 border-4 border-black p-12">
+            <h2 class="font-mono font-bold text-2xl mb-4">NO HAY ARTÍCULOS AÚN</h2>
+            <p class="text-concrete-600">Pronto publicaremos contenido sobre gestión inmobiliaria.</p>
+          </div>
+        </div>
+      )}
     </div>
   </section>
 
@@ -174,8 +156,8 @@ const categories = ["TODOS", "GUÍAS", "TRÁMITES", "LEGAL", "IMPUESOS", "TIPS"]
         Recibe las últimas guías y tips directamente en tu correo. Sin spam.
       </p>
       <form class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-        <input 
-          type="email" 
+        <input
+          type="email"
           placeholder="tu@email.com"
           class="flex-1 px-4 py-3 bg-concrete-800 border-2 border-concrete-600 font-mono text-sm focus:outline-none focus:border-signal-yellow"
         >
@@ -202,10 +184,8 @@ const categories = ["TODOS", "GUÍAS", "TRÁMITES", "LEGAL", "IMPUESOS", "TIPS"]
           <a href="/signin" class="hover:text-signal-yellow">Entrar</a>
           <a href="/signup" class="hover:text-signal-yellow">Crear cuenta</a>
         </nav>
-        <p class="text-concrete-500 text-sm">© 2026 Propiedades Premier</p>
+        <p class="text-concrete-500 text-sm">&copy; 2026 Propiedades Premier</p>
       </div>
     </div>
   </footer>
-
-</body>
-</html>
+</Layout>

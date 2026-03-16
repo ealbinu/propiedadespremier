@@ -1,6 +1,23 @@
 ---
 import Layout from '../layouts/Layout.astro';
-// Home - Landing page
+import { createPocketBase } from '../lib/pocketbase';
+
+const pb = createPocketBase();
+const user = Astro.locals.user;
+
+let latestPosts: any[] = [];
+try {
+  const result = await pb.collection('blog_posts').getList(1, 2, {
+    filter: 'publicado = true',
+    sort: '-fecha_publicacion',
+  });
+  latestPosts = result.items;
+} catch (e) {}
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+}
 ---
 
 <Layout title="Propiedades Premier - Gestión de Inmuebles">
@@ -18,7 +35,11 @@ import Layout from '../layouts/Layout.astro';
       </div>
       <nav class="hidden md:flex items-center gap-1">
         <a href="/blog" class="px-4 py-2 font-mono text-sm font-medium hover:bg-black hover:text-signal-yellow transition-colors">BLOG</a>
-        <a href="/signin" class="px-4 py-2 font-mono text-sm font-medium bg-black text-signal-yellow">ENTRAR</a>
+        {user ? (
+          <a href="/dashboard" class="px-4 py-2 font-mono text-sm font-medium bg-black text-signal-yellow">DASHBOARD</a>
+        ) : (
+          <a href="/signin" class="px-4 py-2 font-mono text-sm font-medium bg-black text-signal-yellow">ENTRAR</a>
+        )}
       </nav>
     </div>
   </header>
@@ -144,17 +165,19 @@ import Layout from '../layouts/Layout.astro';
       </div>
       
       <div class="grid md:grid-cols-2 gap-6">
-        <article class="bg-white border-4 border-black p-6 hover:bg-signal-yellow transition-colors group">
-          <div class="font-mono text-sm text-concrete-500 mb-3">15 MAR 2026</div>
-          <h4 class="font-mono font-bold text-xl mb-3 group-hover:underline">Cómo calcular el predial en México: Guía completa 2026</h4>
-          <p class="text-concrete-600">Entiende cómo se calcula el impuesto predial, qué factores influyen en el valor catastral y cómo pagar menos de forma legal...</p>
-        </article>
-        
-        <article class="bg-white border-4 border-black p-6 hover:bg-signal-yellow transition-colors group">
-          <div class="font-mono text-sm text-concrete-500 mb-3">10 MAR 2026</div>
-          <h4 class="font-mono font-bold text-xl mb-3 group-hover:underline">Documentos necesarios para escriturar una propiedad</h4>
-          <p class="text-concrete-600">Checklist completo de documentación requerida para escrituración: desde la escritura pública hasta el alta en el RPP...</p>
-        </article>
+        {latestPosts.length > 0 ? latestPosts.map((post: any) => (
+          <a href={`/blog/${post.slug}`} class="bg-white border-4 border-black p-6 hover:bg-signal-yellow transition-colors group block">
+            <div class="font-mono text-sm text-concrete-500 mb-3">{formatDate(post.fecha_publicacion)}</div>
+            <h4 class="font-mono font-bold text-xl mb-3 group-hover:underline">{post.titulo}</h4>
+            <p class="text-concrete-600">{post.extracto}</p>
+          </a>
+        )) : (
+          <>
+            <div class="bg-white border-4 border-black p-6">
+              <p class="text-concrete-500 font-mono">Pronto publicaremos contenido sobre gestión inmobiliaria.</p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   </section>

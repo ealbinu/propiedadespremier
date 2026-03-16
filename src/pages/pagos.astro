@@ -1,11 +1,294 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const user = Astro.locals.user!;
+const pb = Astro.locals.pb;
+
+let pagos: any[] = [];
+let propiedades: any[] = [];
+let error = '';
+let success = '';
+
+// Handle form submissions
+if (Astro.request.method === 'POST') {
+  try {
+    const formData = await Astro.request.formData();
+    const action = formData.get('action')?.toString();
+
+    if (action === 'crear') {
+      await pb.collection('pagos').create({
+        concepto: formData.get('concepto'),
+        monto: parseFloat(formData.get('monto')?.toString() || '0'),
+        fecha_vencimiento: formData.get('fecha_vencimiento') || null,
+        propiedad: formData.get('propiedad') || null,
+        usuario: user.id,
+        estatus: 'pendiente',
+      });
+      success = 'Pago registrado exitosamente';
+    } else if (action === 'marcar_pagado') {
+      const id = formData.get('id')?.toString();
+      if (id) {
+        await pb.collection('pagos').update(id, {
+          estatus: 'pagado',
+          fecha_pago: new Date().toISOString(),
+        });
+        success = 'Pago marcado como pagado';
+      }
+    } else if (action === 'eliminar') {
+      const id = formData.get('id')?.toString();
+      if (id) {
+        await pb.collection('pagos').delete(id);
+        success = 'Pago eliminado';
+      }
+    }
+  } catch (e: any) {
+    error = e?.message || 'Error al procesar la solicitud';
+  }
+}
+
+// Fetch data
+try {
+  propiedades = await pb.collection('propiedades').getFullList({
+    filter: `propietario = "${user.id}"`,
+    sort: 'nombre',
+  });
+
+  const filterParts = [`usuario = "${user.id}"`];
+  const propFilter = Astro.url.searchParams.get('propiedad');
+  if (propFilter) filterParts.push(`propiedad = "${propFilter}"`);
+
+  const showPagados = Astro.url.searchParams.get('mostrar') === 'todos';
+  if (!showPagados) filterParts.push('estatus != "pagado"');
+
+  const result = await pb.collection('pagos').getFullList({
+    filter: filterParts.join(' && '),
+    sort: 'fecha_vencimiento',
+    expand: 'propiedad',
+  });
+  pagos = result;
+} catch (e) {}
+
+const showForm = Astro.url.searchParams.get('action') === 'nuevo';
+const showPagados = Astro.url.searchParams.get('mostrar') === 'todos';
+
+function formatMoney(amount: number) {
+  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(amount);
+}
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+const now = new Date();
+function getStatusColor(pago: any) {
+  if (pago.estatus === 'pagado') return 'bg-green-100 text-green-800';
+  if (!pago.fecha_vencimiento) return 'bg-concrete-200 text-concrete-700';
+  const days = Math.ceil((new Date(pago.fecha_vencimiento).getTime() - now.getTime()) / (1000*60*60*24));
+  if (days < 0) return 'bg-red-100 text-red-800';
+  if (days <= 7) return 'bg-yellow-100 text-yellow-800';
+  return 'bg-concrete-200 text-concrete-700';
+}
+
+function getStatusLabel(pago: any) {
+  if (pago.estatus === 'pagado') return 'PAGADO';
+  if (!pago.fecha_vencimiento) return 'PENDIENTE';
+  const days = Math.ceil((new Date(pago.fecha_vencimiento).getTime() - now.getTime()) / (1000*60*60*24));
+  if (days < 0) return 'VENCIDO';
+  if (days === 0) return 'VENCE HOY';
+  if (days <= 7) return `${days}D`;
+  return 'PENDIENTE';
+}
+
+const totalPendiente = pagos.filter(p => p.estatus !== 'pagado').reduce((sum, p) => sum + (p.monto || 0), 0);
+
+const initials = user.name
+  ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+  : user.email[0].toUpperCase();
 ---
 
 <Layout title="Pagos - Propiedades Premier">
-  <div class="p-8">
-    <h1 class="font-mono font-bold text-3xl mb-4">PAGOS</h1>
-    <p class="mb-8">GESTIÓN DE PAGOS Y RECIBOS.</p>
-    <a href="/dashboard" class="underline font-mono">← Volver al Dashboard</a>
+  <div class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-black text-white border-b-4 border-signal-yellow">
+      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <a href="/" class="w-10 h-10 bg-signal-yellow flex items-center justify-center">
+            <span class="text-black font-mono font-bold">PP</span>
+          </a>
+          <span class="font-mono font-bold text-lg hidden sm:block">PROPIEDADES PREMIER</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="font-mono text-sm hidden sm:block">{user.email}</span>
+          <div class="w-10 h-10 bg-concrete-700 border-2 border-white flex items-center justify-center">
+            <span class="font-mono font-bold">{initials}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="flex flex-1">
+      <!-- Sidebar -->
+      <aside class="w-64 bg-concrete-900 text-white border-r-4 border-black hidden lg:block">
+        <nav class="p-4">
+          <div class="mb-6"><span class="font-mono text-xs text-concrete-400">MENÚ PRINCIPAL</span></div>
+          <ul class="space-y-1">
+            <li><a href="/dashboard" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+              DASHBOARD
+            </a></li>
+            <li><a href="/propiedades" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+              MIS PROPIEDADES
+            </a></li>
+            <li><a href="/pagos" class="flex items-center gap-3 px-4 py-3 bg-signal-yellow text-black font-mono font-medium">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              PAGOS
+            </a></li>
+          </ul>
+          <div class="mt-8 mb-6"><span class="font-mono text-xs text-concrete-400">CUENTA</span></div>
+          <ul><li><a href="/api/auth/signout" class="flex items-center gap-3 px-4 py-3 hover:bg-red-900 font-mono text-sm transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            CERRAR SESIÓN
+          </a></li></ul>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 p-6 pb-24 lg:pb-6">
+        <div class="max-w-5xl">
+          <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
+            <div>
+              <h1 class="font-mono font-bold text-3xl mb-2">PAGOS</h1>
+              <p class="text-concrete-600">
+                {pagos.length} pago{pagos.length !== 1 ? 's' : ''}
+                {!showPagados ? ' pendientes' : ''} — Total: {formatMoney(totalPendiente)}
+              </p>
+            </div>
+            <div class="flex gap-3">
+              <a href={showPagados ? '/pagos' : '/pagos?mostrar=todos'} class="px-4 py-3 font-mono text-sm font-bold border-2 border-black hover:bg-concrete-200 transition-colors">
+                {showPagados ? 'SOLO PENDIENTES' : 'VER TODOS'}
+              </a>
+              <a href="/pagos?action=nuevo" class="bg-black text-white px-6 py-3 font-mono font-bold border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">
+                + NUEVO
+              </a>
+            </div>
+          </div>
+
+          {error && (
+            <div class="bg-red-100 border-4 border-red-500 p-4 mb-6">
+              <p class="font-mono text-sm text-red-700">{error}</p>
+            </div>
+          )}
+          {success && (
+            <div class="bg-green-100 border-4 border-green-500 p-4 mb-6">
+              <p class="font-mono text-sm text-green-700">{success}</p>
+            </div>
+          )}
+
+          <!-- New Payment Form -->
+          {showForm && (
+            <div class="bg-signal-yellow border-4 border-black p-8 mb-8">
+              <h2 class="font-mono font-bold text-xl mb-6">REGISTRAR NUEVO PAGO</h2>
+              <form method="POST" class="grid md:grid-cols-2 gap-4">
+                <input type="hidden" name="action" value="crear" />
+                <div>
+                  <label class="block font-mono text-sm font-medium mb-2">CONCEPTO</label>
+                  <input type="text" name="concepto" required placeholder="Ej: Predial 2026" class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block font-mono text-sm font-medium mb-2">MONTO (MXN)</label>
+                  <input type="number" name="monto" required step="0.01" min="0" placeholder="2450.00" class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block font-mono text-sm font-medium mb-2">FECHA VENCIMIENTO</label>
+                  <input type="date" name="fecha_vencimiento" class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none" />
+                </div>
+                <div>
+                  <label class="block font-mono text-sm font-medium mb-2">PROPIEDAD</label>
+                  <select name="propiedad" class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none">
+                    <option value="">— Sin propiedad —</option>
+                    {propiedades.map((p: any) => (
+                      <option value={p.id}>{p.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <div class="md:col-span-2 flex gap-4">
+                  <button type="submit" class="bg-black text-white px-8 py-3 font-mono font-bold border-2 border-black hover:bg-white hover:text-black transition-colors">
+                    GUARDAR →
+                  </button>
+                  <a href="/pagos" class="px-8 py-3 font-mono font-bold border-2 border-black hover:bg-black hover:text-white transition-colors">
+                    CANCELAR
+                  </a>
+                </div>
+              </form>
+            </div>
+          )}
+
+          <!-- Payments List -->
+          {pagos.length > 0 ? (
+            <div class="bg-white border-4 border-black">
+              <div class="divide-y-2 divide-concrete-200">
+                {pagos.map((pago: any) => (
+                  <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-concrete-50 transition-colors">
+                    <div class="flex items-center gap-4 flex-1">
+                      <span class={`px-3 py-1 font-mono text-xs font-bold ${getStatusColor(pago)}`}>
+                        {getStatusLabel(pago)}
+                      </span>
+                      <div>
+                        <div class="font-mono font-bold">{pago.concepto}</div>
+                        <div class="text-sm text-concrete-500">
+                          {pago.expand?.propiedad ? pago.expand.propiedad.nombre + ' — ' : ''}
+                          Vence: {formatDate(pago.fecha_vencimiento)}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-4">
+                      <div class="font-mono font-bold text-xl">{formatMoney(pago.monto)}</div>
+                      {pago.estatus !== 'pagado' && (
+                        <form method="POST" class="inline">
+                          <input type="hidden" name="action" value="marcar_pagado" />
+                          <input type="hidden" name="id" value={pago.id} />
+                          <button type="submit" class="px-4 py-2 bg-black text-white font-mono text-xs hover:bg-green-600 transition-colors">
+                            PAGADO
+                          </button>
+                        </form>
+                      )}
+                      <form method="POST" class="inline" onsubmit="return confirm('¿Eliminar este pago?')">
+                        <input type="hidden" name="action" value="eliminar" />
+                        <input type="hidden" name="id" value={pago.id} />
+                        <button type="submit" class="px-3 py-2 font-mono text-xs text-red-600 border border-red-300 hover:bg-red-100 transition-colors">
+                          ×
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div class="text-center py-20">
+              <div class="inline-block bg-concrete-200 border-4 border-black p-12">
+                <h2 class="font-mono font-bold text-2xl mb-4">SIN PAGOS {!showPagados ? 'PENDIENTES' : ''}</h2>
+                <p class="text-concrete-600 mb-6">
+                  {!showPagados ? 'No tienes pagos pendientes.' : 'No hay pagos registrados aún.'}
+                </p>
+                <a href="/pagos?action=nuevo" class="inline-block bg-black text-white px-8 py-4 font-mono font-bold border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">
+                  + REGISTRAR PAGO
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+
+    <!-- Mobile Nav -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-black text-white border-t-4 border-signal-yellow flex justify-around py-3">
+      <a href="/dashboard" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/></svg><span class="font-mono text-xs mt-1">INICIO</span></a>
+      <a href="/propiedades" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="font-mono text-xs mt-1">PROPS</span></a>
+      <a href="/pagos" class="flex flex-col items-center text-signal-yellow"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span class="font-mono text-xs mt-1">PAGOS</span></a>
+      <a href="/api/auth/signout" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg><span class="font-mono text-xs mt-1">SALIR</span></a>
+    </nav>
   </div>
 </Layout>

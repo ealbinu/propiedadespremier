@@ -1,0 +1,9 @@
+#:schema node_modules/wrangler/config-schema.json
+name = "propiedadespremier"
+compatibility_date = "2024-04-03"
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "propiedades-premier-db"
+database_id = "placeholder-id" # El usuario deberá crearla con 'npx wrangler d1 create propiedades-premier-db'
