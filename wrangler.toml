@@ -3,5 +3,20 @@ name = "propiedadespremier"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+# URL opcional de un proxy externo para scraping gubernamental.
+# Ejemplo: PREDIAL_PROXY_URL = "https://predial-proxy-production.up.railway.app"
+PREDIAL_PROXY_URL = ""
+# Token opcional para autenticar el proxy
+PREDIAL_PROXY_TOKEN = ""
+
+# IA/OCR opcional para documentos de pago
+OPENAI_API_KEY = ""
+OPENAI_BASE_URL = "https://api.openai.com/v1"
+DOCUMENT_AI_MODEL = "gpt-4o-mini"
+DOCUMENT_AI_WEBHOOK_URL = ""
+DOCUMENT_AI_WEBHOOK_TOKEN = ""
+OCR_SPACE_API_KEY = ""
+
 [assets]
 directory = "dist/client"

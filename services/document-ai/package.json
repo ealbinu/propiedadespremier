@@ -1,0 +1,13 @@
+{
+  "name": "propiedades-premier-document-ai",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node index.mjs",
+    "dev": "node --watch index.mjs"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

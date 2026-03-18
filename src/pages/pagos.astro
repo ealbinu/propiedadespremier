@@ -6,6 +6,7 @@ const pb = Astro.locals.pb;
 
 let pagos: any[] = [];
 let propiedades: any[] = [];
+let documentos: any[] = [];
 let error = '';
 let success = '';
 
@@ -21,6 +22,7 @@ if (Astro.request.method === 'POST') {
         monto: parseFloat(formData.get('monto')?.toString() || '0'),
         fecha_vencimiento: formData.get('fecha_vencimiento') || null,
         propiedad: formData.get('propiedad') || null,
+        linea_captura: formData.get('linea_captura')?.toString().trim() || null,
         usuario: user.id,
         estatus: 'pendiente',
       });
@@ -48,10 +50,11 @@ if (Astro.request.method === 'POST') {
 
 // Fetch data
 try {
-  propiedades = await pb.collection('propiedades').getFullList({
+  const propResult = await pb.collection('propiedades').getList(1, 500, {
     filter: `propietario = "${user.id}"`,
     sort: 'nombre',
   });
+  propiedades = propResult.items;
 
   const filterParts = [`usuario = "${user.id}"`];
   const propFilter = Astro.url.searchParams.get('propiedad');
@@ -60,16 +63,35 @@ try {
   const showPagados = Astro.url.searchParams.get('mostrar') === 'todos';
   if (!showPagados) filterParts.push('estatus != "pagado"');
 
-  const result = await pb.collection('pagos').getFullList({
+  const pagosResult = await pb.collection('pagos').getList(1, 500, {
     filter: filterParts.join(' && '),
     sort: 'fecha_vencimiento',
     expand: 'propiedad',
   });
-  pagos = result;
+  pagos = pagosResult.items;
+
+  const docFilterParts = [`usuario = "${user.id}"`, `periodicidad != "unico"`, `proximo_pago != ""`];
+  if (propFilter) docFilterParts.push(`propiedad = "${propFilter}"`);
+  const docResult = await pb.collection('documentos_pagos').getList(1, 500, {
+    filter: docFilterParts.join(' && '),
+    sort: 'proximo_pago',
+    expand: 'propiedad',
+  });
+  documentos = docResult.items;
 } catch (e) {}
 
 const showForm = Astro.url.searchParams.get('action') === 'nuevo';
 const showPagados = Astro.url.searchParams.get('mostrar') === 'todos';
+const propFilter = Astro.url.searchParams.get('propiedad') || '';
+
+const PERIODICIDAD_MESES: Record<string, number | null> = {
+  unico: null,
+  mensual: 1,
+  bimestral: 2,
+  trimestral: 3,
+  semestral: 6,
+  anual: 12,
+};
 
 function formatMoney(amount: number) {
   return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(amount);
@@ -101,6 +123,36 @@ function getStatusLabel(pago: any) {
 }
 
 const totalPendiente = pagos.filter(p => p.estatus !== 'pagado').reduce((sum, p) => sum + (p.monto || 0), 0);
+
+const limiteProyeccion = new Date();
+limiteProyeccion.setFullYear(limiteProyeccion.getFullYear() + 1);
+const projectedPagos: any[] = [];
+for (const doc of documentos) {
+  const months = PERIODICIDAD_MESES[doc.periodicidad || ''] ?? null;
+  if (!months || !doc.proximo_pago) continue;
+  let current = new Date(doc.proximo_pago);
+  if (isNaN(current.getTime())) continue;
+  while (current <= limiteProyeccion) {
+    const fecha = current.toISOString().slice(0, 10);
+    const concepto = `${doc.categoria ? doc.categoria.charAt(0).toUpperCase() + doc.categoria.slice(1) : 'Pago'}${doc.proveedor ? ` - ${doc.proveedor}` : ''}`;
+    const existsReal = pagos.some((p: any) => p.concepto === concepto && p.fecha_vencimiento && p.fecha_vencimiento.slice(0,10) === fecha);
+    if (!existsReal) {
+      projectedPagos.push({
+        id: `proj-${doc.id}-${fecha}`,
+        concepto,
+        monto: doc.monto || 0,
+        fecha_vencimiento: fecha,
+        linea_captura: doc.referencia || null,
+        expand: doc.expand?.propiedad ? { propiedad: doc.expand.propiedad } : null,
+        projected: true,
+      });
+    }
+    const next = new Date(current);
+    next.setMonth(next.getMonth() + months);
+    current = next;
+  }
+}
+projectedPagos.sort((a, b) => new Date(a.fecha_vencimiento).getTime() - new Date(b.fecha_vencimiento).getTime());
 
 const initials = user.name
   ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
@@ -144,6 +196,10 @@ const initials = user.name
             <li><a href="/pagos" class="flex items-center gap-3 px-4 py-3 bg-signal-yellow text-black font-mono font-medium">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
               PAGOS
+            </a></li>
+            <li><a href="/alertas" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+              ALERTAS
             </a></li>
           </ul>
           <div class="mt-8 mb-6"><span class="font-mono text-xs text-concrete-400">CUENTA</span></div>
@@ -213,6 +269,12 @@ const initials = user.name
                     ))}
                   </select>
                 </div>
+                <div class="md:col-span-2">
+                  <label class="block font-mono text-sm font-medium mb-2">LÍNEA DE CAPTURA (OPCIONAL)</label>
+                  <input type="text" name="linea_captura" placeholder="Ej: 00641350000000123456789" maxlength="50"
+                    class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none" />
+                  <p class="text-xs text-concrete-600 mt-1 font-mono">Código de referencia para pagar en banco, OXXO o en línea.</p>
+                </div>
                 <div class="md:col-span-2 flex gap-4">
                   <button type="submit" class="bg-black text-white px-8 py-3 font-mono font-bold border-2 border-black hover:bg-white hover:text-black transition-colors">
                     GUARDAR →
@@ -225,57 +287,105 @@ const initials = user.name
             </div>
           )}
 
+          <script>
+            document.addEventListener('click', (e) => {
+              const btn = (e.target as HTMLElement).closest('.copy-lc') as HTMLButtonElement | null;
+              if (!btn) return;
+              const lc = btn.dataset.lc || '';
+              navigator.clipboard.writeText(lc).then(() => {
+                const orig = btn.textContent;
+                btn.textContent = '¡COPIADO!';
+                setTimeout(() => { btn.textContent = orig; }, 2000);
+              });
+            });
+          </script>
+
           <!-- Payments List -->
-          {pagos.length > 0 ? (
-            <div class="bg-white border-4 border-black">
-              <div class="divide-y-2 divide-concrete-200">
-                {pagos.map((pago: any) => (
-                  <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-concrete-50 transition-colors">
-                    <div class="flex items-center gap-4 flex-1">
-                      <span class={`px-3 py-1 font-mono text-xs font-bold ${getStatusColor(pago)}`}>
-                        {getStatusLabel(pago)}
-                      </span>
-                      <div>
-                        <div class="font-mono font-bold">{pago.concepto}</div>
-                        <div class="text-sm text-concrete-500">
-                          {pago.expand?.propiedad ? pago.expand.propiedad.nombre + ' — ' : ''}
-                          Vence: {formatDate(pago.fecha_vencimiento)}
+          {(pagos.length > 0 || projectedPagos.length > 0) ? (
+            <div class="space-y-4">
+              {pagos.length > 0 && (
+                <div class="bg-white border-4 border-black">
+                  <div class="p-4 border-b-4 border-black font-mono font-bold text-sm">PAGOS REALES</div>
+                  <div class="divide-y-2 divide-concrete-200">
+                    {pagos.map((pago: any) => (
+                      <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-concrete-50 transition-colors">
+                        <div class="flex items-center gap-4 flex-1">
+                          <span class={`px-3 py-1 font-mono text-xs font-bold ${getStatusColor(pago)}`}>
+                            {getStatusLabel(pago)}
+                          </span>
+                          <div>
+                            <div class="font-mono font-bold">{pago.concepto}</div>
+                            <div class="text-sm text-concrete-500">
+                              {pago.expand?.propiedad ? pago.expand.propiedad.nombre + ' — ' : ''}
+                              Vence: {formatDate(pago.fecha_vencimiento)}
+                            </div>
+                            {pago.linea_captura && (
+                              <div class="flex items-center gap-2 mt-2">
+                                <span class="text-xs font-mono bg-concrete-100 border border-concrete-300 px-2 py-1 tracking-wider">
+                                  LC: {pago.linea_captura}
+                                </span>
+                                <button type="button" class="text-xs font-mono text-concrete-500 hover:text-black underline copy-lc" data-lc={pago.linea_captura}>COPIAR</button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                          <div class="font-mono font-bold text-xl">{formatMoney(pago.monto)}</div>
+                          {pago.estatus !== 'pagado' && (
+                            <form method="POST" class="inline">
+                              <input type="hidden" name="action" value="marcar_pagado" />
+                              <input type="hidden" name="id" value={pago.id} />
+                              <button type="submit" class="px-4 py-2 bg-black text-white font-mono text-xs hover:bg-green-600 transition-colors">PAGADO</button>
+                            </form>
+                          )}
+                          <form method="POST" class="inline" onsubmit="return confirm('¿Eliminar este pago?')">
+                            <input type="hidden" name="action" value="eliminar" />
+                            <input type="hidden" name="id" value={pago.id} />
+                            <button type="submit" class="px-3 py-2 font-mono text-xs text-red-600 border border-red-300 hover:bg-red-100 transition-colors">×</button>
+                          </form>
                         </div>
                       </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                      <div class="font-mono font-bold text-xl">{formatMoney(pago.monto)}</div>
-                      {pago.estatus !== 'pagado' && (
-                        <form method="POST" class="inline">
-                          <input type="hidden" name="action" value="marcar_pagado" />
-                          <input type="hidden" name="id" value={pago.id} />
-                          <button type="submit" class="px-4 py-2 bg-black text-white font-mono text-xs hover:bg-green-600 transition-colors">
-                            PAGADO
-                          </button>
-                        </form>
-                      )}
-                      <form method="POST" class="inline" onsubmit="return confirm('¿Eliminar este pago?')">
-                        <input type="hidden" name="action" value="eliminar" />
-                        <input type="hidden" name="id" value={pago.id} />
-                        <button type="submit" class="px-3 py-2 font-mono text-xs text-red-600 border border-red-300 hover:bg-red-100 transition-colors">
-                          ×
-                        </button>
-                      </form>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
+
+              {projectedPagos.length > 0 && !showPagados && (
+                <div class="bg-white border-4 border-concrete-300">
+                  <div class="p-4 border-b-4 border-concrete-300 font-mono font-bold text-sm text-concrete-600">CALENDARIO PROYECTADO (12 MESES)</div>
+                  <div class="divide-y-2 divide-concrete-100">
+                    {projectedPagos.map((pago: any) => (
+                      <div class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-concrete-50 transition-colors">
+                        <div class="flex items-center gap-4 flex-1">
+                          <span class="px-3 py-1 font-mono text-xs font-bold bg-concrete-200 text-concrete-700">PROY</span>
+                          <div>
+                            <div class="font-mono font-bold text-concrete-700">{pago.concepto}</div>
+                            <div class="text-sm text-concrete-500">
+                              {pago.expand?.propiedad ? pago.expand.propiedad.nombre + ' — ' : ''}
+                              Estimado: {formatDate(pago.fecha_vencimiento)}
+                            </div>
+                            {pago.linea_captura && (
+                              <div class="flex items-center gap-2 mt-2">
+                                <span class="text-xs font-mono bg-concrete-100 border border-concrete-300 px-2 py-1 tracking-wider">REF: {pago.linea_captura}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div class="font-mono font-bold text-xl text-concrete-700">{pago.monto ? formatMoney(pago.monto) : '—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div class="text-center py-20">
               <div class="inline-block bg-concrete-200 border-4 border-black p-12">
                 <h2 class="font-mono font-bold text-2xl mb-4">SIN PAGOS {!showPagados ? 'PENDIENTES' : ''}</h2>
                 <p class="text-concrete-600 mb-6">
-                  {!showPagados ? 'No tienes pagos pendientes.' : 'No hay pagos registrados aún.'}
+                  {!showPagados ? 'No tienes pagos pendientes ni proyecciones activas.' : 'No hay pagos registrados aún.'}
                 </p>
-                <a href="/pagos?action=nuevo" class="inline-block bg-black text-white px-8 py-4 font-mono font-bold border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">
-                  + REGISTRAR PAGO
-                </a>
+                <a href="/pagos?action=nuevo" class="inline-block bg-black text-white px-8 py-4 font-mono font-bold border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">+ REGISTRAR PAGO</a>
               </div>
             </div>
           )}
@@ -288,6 +398,7 @@ const initials = user.name
       <a href="/dashboard" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/></svg><span class="font-mono text-xs mt-1">INICIO</span></a>
       <a href="/propiedades" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="font-mono text-xs mt-1">PROPS</span></a>
       <a href="/pagos" class="flex flex-col items-center text-signal-yellow"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span class="font-mono text-xs mt-1">PAGOS</span></a>
+      <a href="/alertas" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg><span class="font-mono text-xs mt-1">ALERTAS</span></a>
       <a href="/api/auth/signout" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg><span class="font-mono text-xs mt-1">SALIR</span></a>
     </nav>
   </div>

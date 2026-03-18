@@ -1,0 +1,318 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const user = Astro.locals.user!;
+const pb = Astro.locals.pb;
+
+let pagos: any[] = [];
+let error = '';
+
+try {
+  const result = await pb.collection('pagos').getList(1, 500, {
+    filter: `usuario = "${user.id}" && estatus != "pagado"`,
+    sort: 'fecha_vencimiento',
+    expand: 'propiedad',
+  });
+  pagos = result.items;
+} catch (e: any) {
+  error = e?.message || 'Error al cargar los pagos';
+}
+
+const now = new Date();
+
+function diasParaVencer(dateStr: string): number {
+  if (!dateStr) return Infinity;
+  return Math.ceil((new Date(dateStr).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+const vencidos = pagos.filter(p => diasParaVencer(p.fecha_vencimiento) < 0);
+const urgentes = pagos.filter(p => {
+  const d = diasParaVencer(p.fecha_vencimiento);
+  return d >= 0 && d <= 3;
+});
+const proximos = pagos.filter(p => {
+  const d = diasParaVencer(p.fecha_vencimiento);
+  return d > 3 && d <= 15;
+});
+const futuros = pagos.filter(p => diasParaVencer(p.fecha_vencimiento) > 15);
+
+function formatDate(dateStr: string) {
+  if (!dateStr) return '—';
+  return new Date(dateStr).toLocaleDateString('es-MX', {
+    weekday: 'long', day: '2-digit', month: 'long', year: 'numeric',
+  });
+}
+
+function formatMoney(amount: number) {
+  return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', minimumFractionDigits: 0 }).format(amount);
+}
+
+const initials = user.name
+  ? user.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2)
+  : user.email[0].toUpperCase();
+---
+
+<Layout title="Alertas de Vencimiento - Propiedades Premier">
+  <div class="flex flex-col min-h-screen">
+    <!-- Header -->
+    <header class="bg-black text-white border-b-4 border-signal-yellow">
+      <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <a href="/" class="w-10 h-10 bg-signal-yellow flex items-center justify-center">
+            <span class="text-black font-mono font-bold">PP</span>
+          </a>
+          <span class="font-mono font-bold text-lg hidden sm:block">PROPIEDADES PREMIER</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="font-mono text-sm hidden sm:block">{user.email}</span>
+          <div class="w-10 h-10 bg-concrete-700 border-2 border-white flex items-center justify-center">
+            <span class="font-mono font-bold">{initials}</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="flex flex-1">
+      <!-- Sidebar -->
+      <aside class="w-64 bg-concrete-900 text-white border-r-4 border-black hidden lg:block">
+        <nav class="p-4">
+          <div class="mb-6"><span class="font-mono text-xs text-concrete-400">MENÚ PRINCIPAL</span></div>
+          <ul class="space-y-1">
+            <li>
+              <a href="/dashboard" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+                DASHBOARD
+              </a>
+            </li>
+            <li>
+              <a href="/propiedades" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                MIS PROPIEDADES
+              </a>
+            </li>
+            <li>
+              <a href="/pagos" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                PAGOS
+              </a>
+            </li>
+            <li>
+              <a href="/alertas" class="flex items-center gap-3 px-4 py-3 bg-signal-yellow text-black font-mono font-medium">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                ALERTAS
+              </a>
+            </li>
+            <li>
+              <a href="/blog" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+                BLOG
+              </a>
+            </li>
+          </ul>
+          <div class="mt-8 mb-6"><span class="font-mono text-xs text-concrete-400">CUENTA</span></div>
+          <ul>
+            <li>
+              <a href="/api/auth/signout" class="flex items-center gap-3 px-4 py-3 hover:bg-red-900 font-mono text-sm transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                CERRAR SESIÓN
+              </a>
+            </li>
+          </ul>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 p-6 pb-24 lg:pb-6">
+        <div class="max-w-3xl">
+          <div class="mb-8">
+            <h1 class="font-mono font-bold text-3xl mb-2">ALERTAS DE VENCIMIENTO</h1>
+            <p class="text-concrete-600">Tus pagos pendientes ordenados por urgencia</p>
+          </div>
+
+          {error && (
+            <div class="bg-red-100 border-4 border-red-500 p-4 mb-6">
+              <p class="font-mono text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
+          <!-- Summary badges -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-red-100 border-4 border-red-500 p-4 text-center">
+              <div class="font-mono font-bold text-3xl text-red-700">{vencidos.length}</div>
+              <div class="font-mono text-xs text-red-600 mt-1">VENCIDOS</div>
+            </div>
+            <div class="bg-signal-yellow border-4 border-black p-4 text-center">
+              <div class="font-mono font-bold text-3xl">{urgentes.length}</div>
+              <div class="font-mono text-xs mt-1">URGENTES (≤3d)</div>
+            </div>
+            <div class="bg-yellow-100 border-4 border-yellow-500 p-4 text-center">
+              <div class="font-mono font-bold text-3xl text-yellow-700">{proximos.length}</div>
+              <div class="font-mono text-xs text-yellow-600 mt-1">PRÓXIMOS (≤15d)</div>
+            </div>
+            <div class="bg-concrete-100 border-4 border-black p-4 text-center">
+              <div class="font-mono font-bold text-3xl">{futuros.length}</div>
+              <div class="font-mono text-xs text-concrete-500 mt-1">A FUTURO</div>
+            </div>
+          </div>
+
+          {pagos.length === 0 && (
+            <div class="text-center py-20 bg-white border-4 border-black">
+              <svg class="w-16 h-16 mx-auto text-concrete-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <h2 class="font-mono font-bold text-2xl mb-2">¡TODO EN ORDEN!</h2>
+              <p class="text-concrete-500">No tienes pagos pendientes por vencer.</p>
+            </div>
+          )}
+
+          <!-- Vencidos -->
+          {vencidos.length > 0 && (
+            <div class="mb-8">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-4 h-4 bg-red-500 border-2 border-black"></div>
+                <h2 class="font-mono font-bold text-xl text-red-600">VENCIDOS — PAGA HOY</h2>
+              </div>
+              <div class="bg-white border-4 border-red-500 divide-y-2 divide-red-200">
+                {vencidos.map((p: any) => (
+                  <div class="p-5 flex items-center justify-between gap-4">
+                    <div>
+                      <div class="font-mono font-bold">{p.concepto}{p.expand?.propiedad ? ` · ${p.expand.propiedad.nombre}` : ''}</div>
+                      <div class="text-sm text-red-600 font-mono">Venció el {formatDate(p.fecha_vencimiento)}</div>
+                      {p.linea_captura && (
+                        <div class="text-xs text-concrete-500 font-mono mt-1">LC: {p.linea_captura}</div>
+                      )}
+                    </div>
+                    <div class="text-right flex-shrink-0">
+                      <div class="font-mono font-bold text-xl">{formatMoney(p.monto)}</div>
+                      <a href="/pagos" class="text-xs font-mono underline text-red-600">IR A PAGOS</a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <!-- Urgentes -->
+          {urgentes.length > 0 && (
+            <div class="mb-8">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-4 h-4 bg-signal-yellow border-2 border-black"></div>
+                <h2 class="font-mono font-bold text-xl">URGENTES — MENOS DE 3 DÍAS</h2>
+              </div>
+              <div class="bg-white border-4 border-black divide-y-2 divide-concrete-200">
+                {urgentes.map((p: any) => {
+                  const dias = diasParaVencer(p.fecha_vencimiento);
+                  return (
+                    <div class="p-5 flex items-center justify-between gap-4">
+                      <div>
+                        <div class="font-mono font-bold">{p.concepto}{p.expand?.propiedad ? ` · ${p.expand.propiedad.nombre}` : ''}</div>
+                        <div class="text-sm text-concrete-500 font-mono">
+                          {dias === 0 ? 'Vence HOY' : `Vence en ${dias} día${dias > 1 ? 's' : ''}`} — {formatDate(p.fecha_vencimiento)}
+                        </div>
+                        {p.linea_captura && (
+                          <div class="text-xs text-concrete-500 font-mono mt-1">LC: {p.linea_captura}</div>
+                        )}
+                      </div>
+                      <div class="text-right flex-shrink-0">
+                        <div class="font-mono font-bold text-xl">{formatMoney(p.monto)}</div>
+                        <a href="/pagos" class="text-xs font-mono underline">IR A PAGOS</a>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <!-- Próximos -->
+          {proximos.length > 0 && (
+            <div class="mb-8">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-4 h-4 bg-yellow-400 border-2 border-black"></div>
+                <h2 class="font-mono font-bold text-xl">PRÓXIMOS — ESTA QUINCENA</h2>
+              </div>
+              <div class="bg-white border-4 border-black divide-y-2 divide-concrete-200">
+                {proximos.map((p: any) => {
+                  const dias = diasParaVencer(p.fecha_vencimiento);
+                  return (
+                    <div class="p-5 flex items-center justify-between gap-4">
+                      <div>
+                        <div class="font-mono font-bold">{p.concepto}{p.expand?.propiedad ? ` · ${p.expand.propiedad.nombre}` : ''}</div>
+                        <div class="text-sm text-concrete-500 font-mono">
+                          Vence en {dias} días — {formatDate(p.fecha_vencimiento)}
+                        </div>
+                        {p.linea_captura && (
+                          <div class="text-xs text-concrete-500 font-mono mt-1">LC: {p.linea_captura}</div>
+                        )}
+                      </div>
+                      <div class="text-right flex-shrink-0">
+                        <div class="font-mono font-bold text-xl">{formatMoney(p.monto)}</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <!-- Futuros -->
+          {futuros.length > 0 && (
+            <div class="mb-8">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-4 h-4 bg-concrete-300 border-2 border-black"></div>
+                <h2 class="font-mono font-bold text-xl text-concrete-500">A FUTURO — MÁS DE 15 DÍAS</h2>
+              </div>
+              <div class="bg-white border-4 border-concrete-300 divide-y-2 divide-concrete-100">
+                {futuros.map((p: any) => {
+                  const dias = diasParaVencer(p.fecha_vencimiento);
+                  return (
+                    <div class="p-5 flex items-center justify-between gap-4">
+                      <div>
+                        <div class="font-mono font-bold text-concrete-700">{p.concepto}{p.expand?.propiedad ? ` · ${p.expand.propiedad.nombre}` : ''}</div>
+                        <div class="text-sm text-concrete-400 font-mono">
+                          Vence en {dias} días — {formatDate(p.fecha_vencimiento)}
+                        </div>
+                      </div>
+                      <div class="font-mono font-bold text-concrete-600">{formatMoney(p.monto)}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <!-- Link to add payments -->
+          <div class="text-center pt-4">
+            <a href="/pagos?action=nuevo" class="inline-block bg-black text-white px-8 py-4 font-mono font-bold border-2 border-black hover:bg-signal-yellow hover:text-black transition-colors">
+              + REGISTRAR NUEVO PAGO
+            </a>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Mobile Nav -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-black text-white border-t-4 border-signal-yellow flex justify-around py-3">
+      <a href="/dashboard" class="flex flex-col items-center">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/></svg>
+        <span class="font-mono text-xs mt-1">INICIO</span>
+      </a>
+      <a href="/propiedades" class="flex flex-col items-center">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        <span class="font-mono text-xs mt-1">PROPS</span>
+      </a>
+      <a href="/pagos" class="flex flex-col items-center">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <span class="font-mono text-xs mt-1">PAGOS</span>
+      </a>
+      <a href="/alertas" class="flex flex-col items-center text-signal-yellow">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <span class="font-mono text-xs mt-1">ALERTAS</span>
+      </a>
+      <a href="/api/auth/signout" class="flex flex-col items-center">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+        <span class="font-mono text-xs mt-1">SALIR</span>
+      </a>
+    </nav>
+  </div>
+</Layout>

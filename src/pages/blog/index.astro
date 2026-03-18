@@ -14,8 +14,8 @@ try {
   });
   posts = result.items;
 
-  const catResult = await pb.collection('categorias_blog').getFullList({ sort: 'nombre' });
-  categories = catResult;
+  const catResult = await pb.collection('categorias_blog').getList(1, 100, { sort: 'nombre' });
+  categories = catResult.items;
 } catch (e) {
   // Collections may be empty
 }
@@ -109,7 +109,11 @@ const user = Astro.locals.user;
                 {getImageUrl(post) ? (
                   <img src={getImageUrl(post)} alt={post.titulo} class="w-full h-full object-cover" />
                 ) : (
-                  <div class="text-concrete-500 font-mono text-sm">[IMAGEN]</div>
+                  <div class="w-full h-full flex items-center justify-center bg-concrete-200">
+                    <svg class="w-16 h-16 text-concrete-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                    </svg>
+                  </div>
                 )}
               </div>
               <div class="p-6">
@@ -155,18 +159,59 @@ const user = Astro.locals.user;
       <p class="text-concrete-300 mb-8">
         Recibe las últimas guías y tips directamente en tu correo. Sin spam.
       </p>
-      <form class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+      <form id="newsletter-form" class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
         <input
+          id="newsletter-email"
           type="email"
+          required
           placeholder="tu@email.com"
           class="flex-1 px-4 py-3 bg-concrete-800 border-2 border-concrete-600 font-mono text-sm focus:outline-none focus:border-signal-yellow"
         >
-        <button class="px-6 py-3 bg-signal-yellow text-black font-mono font-bold border-2 border-signal-yellow hover:bg-white transition-colors">
+        <button id="newsletter-btn" type="submit" class="px-6 py-3 bg-signal-yellow text-black font-mono font-bold border-2 border-signal-yellow hover:bg-white transition-colors">
           SUSCRIBIRME
         </button>
       </form>
+      <p id="newsletter-msg" class="mt-4 font-mono text-sm hidden"></p>
     </div>
   </section>
+
+  <script>
+    const form = document.getElementById('newsletter-form') as HTMLFormElement | null;
+    const emailInput = document.getElementById('newsletter-email') as HTMLInputElement | null;
+    const btn = document.getElementById('newsletter-btn') as HTMLButtonElement | null;
+    const msg = document.getElementById('newsletter-msg') as HTMLElement | null;
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!emailInput || !btn || !msg) return;
+
+      btn.textContent = '...';
+      btn.disabled = true;
+
+      const fd = new FormData();
+      fd.append('email', emailInput.value);
+
+      try {
+        const res = await fetch('/api/newsletter', { method: 'POST', body: fd });
+        const data = await res.json() as { ok: boolean; error?: string };
+
+        if (data.ok) {
+          msg.textContent = '✓ ¡Listo! Te avisaremos cuando haya contenido nuevo.';
+          msg.className = 'mt-4 font-mono text-sm text-signal-yellow';
+          form.reset();
+        } else {
+          msg.textContent = data.error || 'Error al suscribirse. Intenta de nuevo.';
+          msg.className = 'mt-4 font-mono text-sm text-red-400';
+        }
+      } catch {
+        msg.textContent = 'Error de conexión. Intenta de nuevo.';
+        msg.className = 'mt-4 font-mono text-sm text-red-400';
+      } finally {
+        btn.textContent = 'SUSCRIBIRME';
+        btn.disabled = false;
+      }
+    });
+  </script>
 
   <!-- Footer -->
   <footer class="bg-concrete-900 text-white py-12 border-t-4 border-signal-yellow">

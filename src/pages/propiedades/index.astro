@@ -1,5 +1,5 @@
 ---
-import Layout from '../layouts/Layout.astro';
+import Layout from '../../layouts/Layout.astro';
 
 const user = Astro.locals.user!;
 const pb = Astro.locals.pb;
@@ -47,12 +47,14 @@ if (Astro.request.method === 'POST') {
 }
 
 try {
-  const result = await pb.collection('propiedades').getFullList({
+  const result = await pb.collection('propiedades').getList(1, 500, {
     filter: `propietario = "${user.id}"`,
-    sort: '-created',
+    sort: 'nombre',
   });
-  propiedades = result;
-} catch (e) {}
+  propiedades = result.items;
+} catch (e: any) {
+  error = `Error al cargar propiedades: ${e?.message || e}`;
+}
 
 const showForm = Astro.url.searchParams.get('action') === 'nueva';
 
@@ -98,6 +100,10 @@ const initials = user.name
             <li><a href="/pagos" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
               PAGOS
+            </a></li>
+            <li><a href="/alertas" class="flex items-center gap-3 px-4 py-3 hover:bg-concrete-800 font-mono text-sm transition-colors">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+              ALERTAS
             </a></li>
           </ul>
           <div class="mt-8 mb-6"><span class="font-mono text-xs text-concrete-400">CUENTA</span></div>
@@ -165,13 +171,12 @@ const initials = user.name
                   </div>
                 </div>
 
-                <!-- Colonia (autocompletada, con select si hay varias) -->
+                <!-- Colonia (autocompletada desde CP) -->
                 <div>
                   <label class="block font-mono text-sm font-medium mb-2">COLONIA</label>
-                  <input type="text" name="colonia" id="colonia-input" placeholder="Se llena con el CP"
-                    class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none" />
-                  <select id="colonia-select" name="_colonia_select"
-                    class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none hidden mt-1">
+                  <select name="colonia" id="colonia-select"
+                    class="w-full px-4 py-3 bg-white border-2 border-black font-mono text-sm focus:outline-none">
+                    <option value="">— Ingresa el CP primero —</option>
                   </select>
                 </div>
 
@@ -223,20 +228,18 @@ const initials = user.name
           )}
 
           <script>
-            const cpInput = document.getElementById('cp-input');
-            const cpStatus = document.getElementById('cp-status');
-            const coloniaInput = document.getElementById('colonia-input');
-            const coloniaSelect = document.getElementById('colonia-select');
-            const ciudadInput = document.getElementById('ciudad-input');
-            const estadoInput = document.getElementById('estado-input');
+            const cpInput = document.getElementById('cp-input') as HTMLInputElement | null;
+            const cpStatus = document.getElementById('cp-status') as HTMLElement | null;
+            const coloniaSelect = document.getElementById('colonia-select') as HTMLSelectElement | null;
+            const ciudadInput = document.getElementById('ciudad-input') as HTMLInputElement | null;
+            const estadoInput = document.getElementById('estado-input') as HTMLInputElement | null;
 
             if (cpInput) {
               let debounceTimer: ReturnType<typeof setTimeout>;
 
               cpInput.addEventListener('input', () => {
-                const cp = (cpInput as HTMLInputElement).value.replace(/\D/g, '');
-                (cpInput as HTMLInputElement).value = cp;
-
+                const cp = cpInput.value.replace(/\D/g, '');
+                cpInput.value = cp;
                 clearTimeout(debounceTimer);
                 if (cp.length === 5) {
                   debounceTimer = setTimeout(() => buscarCP(cp), 400);
@@ -245,19 +248,12 @@ const initials = user.name
                 }
               });
 
-              coloniaSelect?.addEventListener('change', () => {
-                const sel = coloniaSelect as HTMLSelectElement;
-                if (coloniaInput) (coloniaInput as HTMLInputElement).value = sel.value;
-              });
-
               // On form submit, build the full direccion field
               document.getElementById('prop-form')?.addEventListener('submit', (e) => {
                 const form = e.target as HTMLFormElement;
-                const calle = (form.querySelector('[name="calle"]') as HTMLInputElement)?.value;
-                const colonia = (coloniaInput as HTMLInputElement)?.value;
-                const cp = (cpInput as HTMLInputElement)?.value;
-
-                // Build direccion combining calle + colonia + cp
+                const calle = (form.querySelector('[name="calle"]') as HTMLInputElement)?.value || '';
+                const colonia = coloniaSelect?.value || '';
+                const cp = cpInput.value;
                 const partes = [calle, colonia, cp ? `CP ${cp}` : ''].filter(Boolean);
                 const hidden = document.createElement('input');
                 hidden.type = 'hidden';
@@ -274,33 +270,47 @@ const initials = user.name
               cpStatus.classList.remove('hidden');
 
               try {
-                const res = await fetch(`https://sepomex.icalialabs.com/api/v1/zip_codes?zip_code=${cp}`);
-                const data = await res.json();
+                // Fetch all pages to get every colonia
+                const colonias: string[] = [];
+                let ciudad = '';
+                let estado = '';
+                let page = 1;
+                let totalPages = 1;
 
-                if (data.zip_codes && data.zip_codes.length > 0) {
-                  const colonias = data.zip_codes.map((z: any) => z.d_asenta).filter(Boolean);
-                  const first = data.zip_codes[0];
+                do {
+                  const res = await fetch(
+                    `https://sepomex.icalialabs.com/api/v1/zip_codes?zip_code=${cp}&per_page=100&page=${page}`
+                  );
+                  const data = await res.json();
 
-                  // Fill ciudad & estado
-                  if (ciudadInput) (ciudadInput as HTMLInputElement).value = first.d_mnpio || first.d_ciudad || '';
-                  if (estadoInput) (estadoInput as HTMLInputElement).value = first.d_estado || '';
+                  if (!data.zip_codes || data.zip_codes.length === 0) break;
 
-                  // Fill colonias
-                  if (colonias.length === 1) {
-                    if (coloniaInput) (coloniaInput as HTMLInputElement).value = colonias[0];
-                    if (coloniaSelect) (coloniaSelect as HTMLElement).classList.add('hidden');
-                  } else if (colonias.length > 1) {
-                    if (coloniaInput) (coloniaInput as HTMLInputElement).value = colonias[0];
-                    const sel = coloniaSelect as HTMLSelectElement;
-                    sel.innerHTML = colonias.map((c: string) => `<option value="${c}">${c}</option>`).join('');
-                    sel.classList.remove('hidden');
+                  for (const z of data.zip_codes) {
+                    if (z.d_asenta && !colonias.includes(z.d_asenta)) colonias.push(z.d_asenta);
+                    if (!ciudad && (z.d_mnpio || z.d_ciudad)) ciudad = z.d_mnpio || z.d_ciudad;
+                    if (!estado && z.d_estado) estado = z.d_estado;
                   }
 
-                  cpStatus.textContent = '✓';
+                  totalPages = data.meta?.total_pages ?? 1;
+                  page++;
+                } while (page <= totalPages);
+
+                if (colonias.length > 0) {
+                  colonias.sort();
+                  if (ciudadInput) ciudadInput.value = ciudad;
+                  if (estadoInput) estadoInput.value = estado;
+
+                  if (coloniaSelect) {
+                    coloniaSelect.innerHTML = colonias
+                      .map((c) => `<option value="${c}">${c}</option>`)
+                      .join('');
+                  }
+
+                  cpStatus.textContent = `✓ ${colonias.length} colonia${colonias.length > 1 ? 's' : ''}`;
                   cpStatus.className = 'absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-green-600';
                 } else {
                   limpiarCampos();
-                  cpStatus.textContent = '✗';
+                  cpStatus.textContent = '✗ CP no encontrado';
                   cpStatus.className = 'absolute right-3 top-1/2 -translate-y-1/2 font-mono text-xs text-red-600';
                 }
               } catch {
@@ -310,10 +320,9 @@ const initials = user.name
             }
 
             function limpiarCampos() {
-              if (coloniaInput) (coloniaInput as HTMLInputElement).value = '';
-              if (ciudadInput) (ciudadInput as HTMLInputElement).value = '';
-              if (estadoInput) (estadoInput as HTMLInputElement).value = '';
-              if (coloniaSelect) (coloniaSelect as HTMLElement).classList.add('hidden');
+              if (ciudadInput) ciudadInput.value = '';
+              if (estadoInput) estadoInput.value = '';
+              if (coloniaSelect) coloniaSelect.innerHTML = '<option value="">— Ingresa el CP primero —</option>';
               if (cpStatus) cpStatus.classList.add('hidden');
             }
           </script>
@@ -322,13 +331,13 @@ const initials = user.name
           {propiedades.length > 0 ? (
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {propiedades.map((prop: any) => (
-                <div class="bg-white border-4 border-black">
+                <a href={`/propiedades/${prop.id}`} class="bg-white border-4 border-black hover:border-signal-yellow hover:-translate-y-1 transition-all group block">
                   <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
                       <span class="px-2 py-1 bg-concrete-200 font-mono text-xs font-bold uppercase">{prop.tipo || 'propiedad'}</span>
                       <span class={`w-3 h-3 rounded-full ${prop.estatus === 'activa' ? 'bg-green-500' : 'bg-concrete-400'}`}></span>
                     </div>
-                    <h3 class="font-mono font-bold text-xl mb-2">{prop.nombre}</h3>
+                    <h3 class="font-mono font-bold text-xl mb-2 group-hover:underline">{prop.nombre}</h3>
                     <p class="text-concrete-600 text-sm mb-1">{prop.direccion}</p>
                     {(prop.ciudad || prop.estado) && (
                       <p class="text-concrete-500 text-sm">{[prop.ciudad, prop.estado].filter(Boolean).join(', ')}</p>
@@ -337,15 +346,11 @@ const initials = user.name
                       <p class="text-concrete-500 text-sm mt-2 italic">{prop.descripcion}</p>
                     )}
                   </div>
-                  <div class="border-t-2 border-concrete-200 p-4 flex justify-between">
-                    <a href={`/pagos?propiedad=${prop.id}`} class="font-mono text-sm font-bold underline hover:no-underline">VER PAGOS</a>
-                    <form method="POST" onsubmit="return confirm('¿Eliminar esta propiedad?')">
-                      <input type="hidden" name="action" value="eliminar" />
-                      <input type="hidden" name="id" value={prop.id} />
-                      <button type="submit" class="font-mono text-sm text-red-600 hover:underline">ELIMINAR</button>
-                    </form>
+                  <div class="border-t-4 border-black bg-black text-white px-6 py-3 flex items-center justify-between">
+                    <span class="font-mono text-sm font-bold">VER DETALLE →</span>
+                    <span class="font-mono text-xs text-concrete-400">SERVICIOS · PAGOS</span>
                   </div>
-                </div>
+                </a>
               ))}
             </div>
           ) : (
@@ -368,6 +373,7 @@ const initials = user.name
       <a href="/dashboard" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6z"/></svg><span class="font-mono text-xs mt-1">INICIO</span></a>
       <a href="/propiedades" class="flex flex-col items-center text-signal-yellow"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg><span class="font-mono text-xs mt-1">PROPS</span></a>
       <a href="/pagos" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg><span class="font-mono text-xs mt-1">PAGOS</span></a>
+      <a href="/alertas" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg><span class="font-mono text-xs mt-1">ALERTAS</span></a>
       <a href="/api/auth/signout" class="flex flex-col items-center"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg><span class="font-mono text-xs mt-1">SALIR</span></a>
     </nav>
   </div>

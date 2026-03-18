@@ -104,37 +104,37 @@ function formatDate(dateStr: string) {
       
       <div class="grid md:grid-cols-3 gap-6">
         <!-- Feature 1 -->
-        <div class="bg-concrete-100 border-4 border-black p-8">
-          <div class="w-16 h-16 bg-black flex items-center justify-center mb-6">
-            <svg class="w-8 h-8 text-signal-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <a href="/pagos" class="bg-concrete-100 border-4 border-black p-8 hover:bg-signal-yellow transition-colors group block">
+          <div class="w-16 h-16 bg-black flex items-center justify-center mb-6 group-hover:bg-concrete-900">
+            <svg class="w-8 h-8 text-signal-yellow group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
           </div>
           <h4 class="font-mono font-bold text-xl mb-3">TRACKING DE PAGOS</h4>
           <p class="text-concrete-600">Registra y visualiza todos tus pagos pendientes. Predial, luz, agua, mantenimiento y servicios personalizados.</p>
-        </div>
+        </a>
 
         <!-- Feature 2 -->
-        <div class="bg-concrete-100 border-4 border-black p-8">
-          <div class="w-16 h-16 bg-black flex items-center justify-center mb-6">
-            <svg class="w-8 h-8 text-signal-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <a href="/alertas" class="bg-concrete-100 border-4 border-black p-8 hover:bg-signal-yellow transition-colors group block">
+          <div class="w-16 h-16 bg-black flex items-center justify-center mb-6 group-hover:bg-concrete-900">
+            <svg class="w-8 h-8 text-signal-yellow group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
             </svg>
           </div>
-          <h4 class="font-mono font-bold text-xl mb-3">ALERTAS POR EMAIL</h4>
-          <p class="text-concrete-600">Recibe recordatorios automáticos antes de las fechas límite. Nunca más pagues recargos por olvidos.</p>
-        </div>
+          <h4 class="font-mono font-bold text-xl mb-3">ALERTAS DE VENCIMIENTO</h4>
+          <p class="text-concrete-600">Ve todos tus pagos por vencer, ordenados por urgencia. Vencidos, urgentes, próximos y a futuro de un vistazo.</p>
+        </a>
 
         <!-- Feature 3 -->
-        <div class="bg-concrete-100 border-4 border-black p-8">
-          <div class="w-16 h-16 bg-black flex items-center justify-center mb-6">
-            <svg class="w-8 h-8 text-signal-yellow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <a href="/pagos" class="bg-concrete-100 border-4 border-black p-8 hover:bg-signal-yellow transition-colors group block">
+          <div class="w-16 h-16 bg-black flex items-center justify-center mb-6 group-hover:bg-concrete-900">
+            <svg class="w-8 h-8 text-signal-yellow group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
             </svg>
           </div>
           <h4 class="font-mono font-bold text-xl mb-3">LÍNEAS DE CAPTURA</h4>
-          <p class="text-concrete-600">Genera líneas de captura para pagos directamente desde la plataforma. Rápido y sin complicaciones.</p>
-        </div>
+          <p class="text-concrete-600">Guarda y copia líneas de captura en cada pago. Referencia siempre a mano para pagar en banco, OXXO o en línea.</p>
+        </a>
       </div>
     </div>
   </section>
@@ -209,8 +209,8 @@ function formatDate(dateStr: string) {
           <h5 class="font-mono font-bold mb-4 text-signal-yellow">RECURSOS</h5>
           <ul class="space-y-2 text-sm text-concrete-300">
             <li><a href="/blog" class="hover:text-white">Blog</a></li>
-            <li><a href="#" class="hover:text-white">Guías</a></li>
-            <li><a href="#" class="hover:text-white">FAQ</a></li>
+            <li><a href="/blog" class="hover:text-white">Guías</a></li>
+            <li><a href="/faq" class="hover:text-white">FAQ</a></li>
           </ul>
         </div>
         
