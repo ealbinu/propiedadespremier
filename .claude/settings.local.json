@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:propiedadespr.pockethost.io)",
+      "Bash(grep -E '\\\\.\\(ts|js|astro\\)$')",
+      "Bash(curl -s -X POST https://propiedadespr.pockethost.io/api/admins/auth-with-password -H \"Content-Type: application/json\" -d '{\"\"\"\"identity\"\"\"\":\"\"\"\"pegaso@agentmail.to\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"vpsMNspJhnGy1zx\"\"\"\"}')",
+      "Bash(curl -s -X POST https://propiedadespr.pockethost.io/api/collections/_superusers/auth-with-password -H \"Content-Type: application/json\" -d '{\"\"\"\"identity\"\"\"\":\"\"\"\"pegaso@agentmail.to\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"vpsMNspJhnGy1zx\"\"\"\"}')",
+      "Bash(PB_TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjb2xsZWN0aW9uSWQiOiJwYmNfMzE0MjYzNTgyMyIsImV4cCI6MTc3Mzc4OTU0MSwiaWQiOiJ3cThwNW5lZTJzZmFxZWwiLCJyZWZyZXNoYWJsZSI6dHJ1ZSwidHlwZSI6ImF1dGgifQ.ZIyviCenWDf7ZQ9F-w1Fmr_r_f0SsXnpf2qH0WuDhYg\")",
+      "Bash(curl -s https://propiedadespr.pockethost.io/api/collections -H \"Authorization: Bearer $PB_TOKEN\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(npm run:*)",
+      "Bash(git -C /Users/fldsmdfr/Documents/GitHub/propiedadespremier status)",
+      "Bash(git -C /Users/fldsmdfr/Documents/GitHub/propiedadespremier diff --stat)",
+      "Bash(git -C /Users/fldsmdfr/Documents/GitHub/propiedadespremier log --oneline -5)",
+      "Bash(git -C /Users/fldsmdfr/Documents/GitHub/propiedadespremier status -u)",
+      "Bash(git -C /Users/fldsmdfr/Documents/GitHub/propiedadespremier add astro.config.mjs wrangler.toml)",
+      "Bash(git -C:*)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(''''PocketBase JS SDK version:'''', d.get\\(''''version''''\\)\\)\")",
+      "Bash(python3 -c \":*)",
+      "Bash(__NEW_LINE_000030147b644d57__ echo:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://propiedadespr.pockethost.io/api/collections/propiedades/records?perPage=200\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://propiedadespr.pockethost.io/api/collections/propiedades/records?perPage=300\")",
+      "Bash(__NEW_LINE_f085d0365c72fb83__ curl:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://propiedadespr.pockethost.io/api/collections/propiedades/records?sort=created\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://propiedadespr.pockethost.io/api/collections/propiedades/records?sort=-nombre\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://propiedadespr.pockethost.io/api/collections/propiedades/records?sort=nombre\")"
+    ]
+  }
+}
